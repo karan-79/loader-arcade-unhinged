@@ -8,7 +8,7 @@ import { SCALE } from '../hooks/fine'
 import { beginCampfire, campfireCells, campfirePicture, createCampfire, stepCampfire } from '../hooks/campfire'
 import { createDojo, dojoCells, stepDojo } from '../hooks/dojo'
 import { createKnight, knightCells, stepKnight } from '../hooks/knight'
-import { createShooter, shooterCells, stepShooter } from '../hooks/shooter'
+import { beginShooterTurn, createShooter, shooterCells, stepShooter } from '../hooks/shooter'
 import { applyContent } from '../hooks/content'
 import { HERO_LINES, SCENES, bazookaTalk, bossTalk } from '../hooks/banter'
 import { hudOverlays } from '../hooks/arena'
@@ -275,4 +275,25 @@ test('in the picture styles, speech steers clear of pictures on the top row', ()
   // Without pictures, a line sits centred over its speaker as before.
   const plain = hudOverlays({ left: '' }, [], 100, speech).find(line => line.text.includes('GPUs'))!
   expect(Math.abs(plain.column + plain.text.length / 2 - 64)).toBeLessThan(1)
+})
+
+test('a boss lives through its scene, so its lines are said', () => {
+  let scenes = 0
+  for (let seed = 1; seed <= 12; seed++) {
+    const random = seeded(seed)
+    const shooter = createShooter()
+    beginShooterTurn(shooter, 96, random)
+    for (let i = 0; i < 600; i++) {
+      shooter.act = actAt(i * 0.066, DEFAULT_PACING)
+      stepShooter(shooter, 0.066, 96, random)
+      const scene = shooter.scene
+      if (scene.length > 0) {
+        scenes++
+        // Only the bazooka, at the scene's end, may take the boss down.
+        const isFinale = scene.some(line => line.action === 'fire')
+        expect(isFinale || (shooter.boss !== null && shooter.boss.ko === null)).toBe(true)
+      }
+    }
+  }
+  expect(scenes).toBeGreaterThan(0)
 })

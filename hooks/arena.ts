@@ -375,13 +375,19 @@ export const hudOverlays = (hud: Hud, pops: readonly Pop[], columns: number, spe
   // The score at the left, the boss's name and health at the right, each
   // moved off any picture in the way.
   const at = (want: number, text: string) => freeColumn(want, text.length, columns, blocked)
-  const rest = [
+  const hudLines = [
     { column: at(1, hud.left), row: 0, text: hud.left, color: HUD_COLOR },
     ...(hud.right === undefined
       ? []
       : [{ column: at(Math.max(0, columns - hud.right.length - 1), hud.right), row: 0, text: hud.right, color: BOSS_COLOR }]),
-    ...popOverlays(pops, columns).filter(pop => blocked.every(span => pop.column > span.right || pop.column + pop.text.length - 1 < span.left)),
   ]
+  // Pop-up words keep off the score and off pictures.
+  const popped = popOverlays(pops, columns).filter(
+    pop =>
+      !hudLines.some(line => line.text !== '' && overlaps(line, pop)) &&
+      blocked.every(span => pop.column > span.right || pop.column + pop.text.length - 1 < span.left),
+  )
+  const rest = [...hudLines, ...popped]
 
   // What is said wins the line; the score and pop-ups it would cover step aside.
   return [...rest.filter(overlay => !said.some(line => overlaps(line, overlay))), ...said]

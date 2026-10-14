@@ -412,6 +412,13 @@ const stepScene = (shooter: Shooter, seconds: number, random: () => number) => {
     return
   }
 
+  // A boss's scene with no boss left to say it is over.
+  if (shooter.boss === null || shooter.boss.ko !== null) {
+    shooter.scene = []
+    shooter.bazooka = false
+    return
+  }
+
   if (shooter.sceneSeconds === 0) {
     if (line.text !== '') {
       say(shooter, line.who, line.text, line.seconds)
@@ -555,16 +562,22 @@ const shoot = (shooter: Shooter, enemy: Enemy, columns: number, random: () => nu
   knockOut(shooter, enemy, columns, random)
 }
 
-const hitBoss = (shooter: Shooter, damage: number, x: number, y: number, random: () => number) => {
+// `isFinale`: the hit that ends a boss's scene (the bazooka). Anything else
+// only sparks off a boss mid-scene, so it lives to say its lines.
+const hitBoss = (shooter: Shooter, damage: number, x: number, y: number, random: () => number, isFinale = false) => {
   const boss = shooter.boss
 
   if (boss === null || boss.ko !== null) {
     return
   }
 
+  burst(shooter.sparks, x, y, 4, HIT_SPARKS, random, 14)
+  if (isTalking(shooter) && !isFinale) {
+    return
+  }
+
   boss.hp -= damage
   boss.flash = 0.08
-  burst(shooter.sparks, x, y, 4, HIT_SPARKS, random, 14)
 
   if (boss.hp <= 0) {
     boss.ko = 0
@@ -841,7 +854,7 @@ const stepProjectiles = (shooter: Shooter, seconds: number, columns: number, ran
 
     if (isAtBoss || rocket.x >= columns - 1) {
       if (boss !== null && boss.ko === null) {
-        hitBoss(shooter, Math.ceil(boss.maxHp * 0.6), rocket.x, rocket.y, random)
+        hitBoss(shooter, Math.ceil(boss.maxHp * 0.6), rocket.x, rocket.y, random, true)
       }
 
       explode(shooter, rocket.x, GROUND / 2, 14, columns, random)
