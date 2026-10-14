@@ -14,6 +14,7 @@ the Token Goblin and friends.
 | `chill-beach` | A day at the beach: shades under a striped umbrella, clouds and a gull, a sandcastle with a flag, a big wave, sunset over the sea, a bonfire under the moon. |
 | `chill-drive` | Clawd takes the scenic route: snowy mountains, rolling hills, pines, sunset, then night with headlight beams and street lamps. |
 | `chill-meditation` | Clawd sits in a zen garden as the moon rises. Lanterns, ripples in the raked sand, fireflies, floating stones, and in the end a golden flame. |
+| `chill-campfire` | A night in the mountains: Clawd by the fire, his knight's helmet, shield and sword by a pine. The fire catches, a marshmallow gets roasted (or not), stars and an owl come out, and he dozes off under shooting stars. |
 | `fight`, `chill` | A different scene from the theme each turn. `fight` is the default. |
 
 In kitty and Ghostty the chill scenes are drawn as live pictures, four times

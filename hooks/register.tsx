@@ -7,6 +7,7 @@ import { DEFAULT_PACING, actAt, pacingFor, pickFresh, remember } from './acts'
 import type { Actor } from './actors'
 import { ARENA_ROWS } from './arena'
 import { beachCells, beachPicture, beginBeach, createBeach, stepBeach } from './beach'
+import { beginCampfire, campfireCells, campfirePicture, createCampfire, stepCampfire } from './campfire'
 import { CONTENT_PATH, applyContent } from './content'
 import { beginCruise, createCruise, cruiseCells, cruisePicture, stepCruise } from './cruise'
 import { beginDojoTurn, createDojo, dojoActors, dojoCells, endDojoTurn, stepDojo } from './dojo'
@@ -39,6 +40,7 @@ const STYLES: readonly AnimStyle[] = [
   'chill-beach',
   'chill-drive',
   'chill-meditation',
+  'chill-campfire',
   'off',
 ]
 
@@ -54,10 +56,10 @@ const LEGACY: Readonly<Record<string, AnimStyle>> = {
   drift: 'chill-drive',
 }
 
-type Scene = 'shooter' | 'dojo' | 'knight' | 'beach' | 'drive' | 'meditation'
+type Scene = 'shooter' | 'dojo' | 'knight' | 'beach' | 'drive' | 'meditation' | 'campfire'
 
 const FIGHTS: readonly Scene[] = ['shooter', 'dojo', 'knight']
-const CHILLS: readonly Scene[] = ['beach', 'drive', 'meditation']
+const CHILLS: readonly Scene[] = ['beach', 'drive', 'meditation', 'campfire']
 
 // A style plays one scene, or a theme's scenes in turn.
 const SCENES_OF: Record<Exclude<AnimStyle, 'off'>, readonly Scene[]> = {
@@ -69,11 +71,12 @@ const SCENES_OF: Record<Exclude<AnimStyle, 'off'>, readonly Scene[]> = {
   'chill-beach': ['beach'],
   'chill-drive': ['drive'],
   'chill-meditation': ['meditation'],
+  'chill-campfire': ['campfire'],
 }
 
 const isFight = (scene: Scene) => FIGHTS.includes(scene)
 
-const BAND_ROWS: Record<Scene, number> = { shooter: ARENA_ROWS, dojo: ARENA_ROWS, knight: ARENA_ROWS, beach: 5, drive: 4, meditation: 5 }
+const BAND_ROWS: Record<Scene, number> = { shooter: ARENA_ROWS, dojo: ARENA_ROWS, knight: ARENA_ROWS, beach: 5, drive: 4, meditation: 5, campfire: 5 }
 
 const SPINNER_WORDS: Record<Scene, readonly string[]> = {
   shooter: ['Clawing', 'Locking and loading', 'Holding the line', 'Shell-shocking', 'Boss hunting'],
@@ -82,6 +85,7 @@ const SPINNER_WORDS: Record<Scene, readonly string[]> = {
   beach: ['Sunbathing', 'Beachcombing', 'Building sandcastles', 'Watching the tide'],
   drive: ['Cruising', 'Taking the scenic route', 'Rolling along', 'Chasing the sunset'],
   meditation: ['Meditating', 'Breathing in', 'Finding center', 'Letting go'],
+  campfire: ['Roasting marshmallows', 'Stoking the fire', 'Stargazing', 'Resting the armor'],
 }
 
 const toStyle = (value: unknown): AnimStyle | undefined => {
@@ -115,6 +119,7 @@ const band: {
   beach: ReturnType<typeof createBeach>
   drive: ReturnType<typeof createCruise>
   meditation: ReturnType<typeof createMeditation>
+  campfire: ReturnType<typeof createCampfire>
   word: string | undefined
   hasGraphics: boolean
   hasPictures: boolean
@@ -139,6 +144,7 @@ const band: {
   beach: createBeach(),
   drive: createCruise(),
   meditation: createMeditation(),
+  campfire: createCampfire(),
   word: undefined,
   hasGraphics: false,
   hasPictures: true,
@@ -163,6 +169,8 @@ function frameCells(columns: number, rows: number, withActors = true) {
       return cruiseCells(band.drive, columns, rows)
     case 'meditation':
       return meditationCells(band.meditation, columns, rows)
+    case 'campfire':
+      return campfireCells(band.campfire, columns, rows)
   }
 }
 
@@ -175,6 +183,8 @@ function framePicture(columns: number, rows: number) {
       return cruisePicture(band.drive, columns, rows)
     case 'meditation':
       return meditationPicture(band.meditation, columns, rows)
+    case 'campfire':
+      return campfirePicture(band.campfire, columns, rows)
     default:
       return undefined
   }
@@ -186,7 +196,8 @@ function stepScene(columns: number) {
   const seconds = FRAME_MS / 1000
   const pacing = band.isPreviewing && !band.isWorking ? PREVIEW_PACING : band.pacing
   const act = band.isOutro ? band.act : actAt((band.frame * FRAME_MS) / 1000, pacing)
-  const chill = band.scene === 'beach' ? band.beach : band.scene === 'drive' ? band.drive : band.scene === 'meditation' ? band.meditation : undefined
+  const chills = { beach: band.beach, drive: band.drive, meditation: band.meditation, campfire: band.campfire } as const
+  const chill = band.scene in chills ? chills[band.scene as keyof typeof chills] : undefined
 
   if (chill !== undefined && chill.act !== act) {
     chill.actSeconds = 0
@@ -212,6 +223,9 @@ function stepScene(columns: number) {
     case 'meditation':
       band.meditation.act = act
       return stepMeditation(band.meditation, seconds, columns)
+    case 'campfire':
+      band.campfire.act = act
+      return stepCampfire(band.campfire, seconds, columns)
   }
 }
 
@@ -256,6 +270,8 @@ function beginTurn() {
       return beginCruise(band.drive)
     case 'meditation':
       return beginMeditation(band.meditation)
+    case 'campfire':
+      return beginCampfire(band.campfire)
   }
 }
 
@@ -300,6 +316,7 @@ function resetScenes() {
   band.beach = createBeach()
   band.drive = createCruise()
   band.meditation = createMeditation()
+  band.campfire = createCampfire()
 }
 
 function startBand($: EngineInterface) {

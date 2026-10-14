@@ -5,6 +5,7 @@ import { beachCells, beachPicture, beginBeach, createBeach, stepBeach } from '..
 import { beginCruise, createCruise, cruiseCells, cruisePicture, stepCruise } from '../hooks/cruise'
 import { beginMeditation, createMeditation, meditationCells, meditationPicture, stepMeditation } from '../hooks/meditation'
 import { SCALE } from '../hooks/fine'
+import { beginCampfire, campfireCells, campfirePicture, createCampfire, stepCampfire } from '../hooks/campfire'
 import { createDojo, dojoCells, stepDojo } from '../hooks/dojo'
 import { createKnight, knightCells, stepKnight } from '../hooks/knight'
 import { createShooter, shooterCells, stepShooter } from '../hooks/shooter'
@@ -59,6 +60,7 @@ test('the chill scenes play through every act', async () => {
     { scene: createBeach(), begin: beginBeach, step: stepBeach, cells: beachCells, picture: beachPicture, rows: 5 },
     { scene: createCruise(), begin: beginCruise, step: stepCruise, cells: cruiseCells, picture: cruisePicture, rows: 4 },
     { scene: createMeditation(), begin: beginMeditation, step: stepMeditation, cells: meditationCells, picture: meditationPicture, rows: 5 },
+    { scene: createCampfire(), begin: beginCampfire, step: stepCampfire, cells: campfireCells, picture: campfirePicture, rows: 5 },
   ] as const
 
   for (const { scene, begin, step, cells, picture, rows } of scenes) {

@@ -7,6 +7,7 @@ export type AnimStyle =
   | 'chill-beach'
   | 'chill-drive'
   | 'chill-meditation'
+  | 'chill-campfire'
   | 'off'
 
 declare module 'claude-code' {
