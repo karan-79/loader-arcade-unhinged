@@ -1,12 +1,16 @@
-# Customizing loader-arcade
+# Customizing loader-arcade-unhinged
 
 Everything the arcade is made of (the rivals, and every line anyone says) is
 data. The built-in set lives in [`content/default.json`](content/default.json).
 You can change any part of it with your own file:
 
 ```
-~/.claude/loader-arcade/content.json
+~/.claude/loader-arcade-unhinged/content.json
 ```
+
+An edition of the plugin can keep its own file instead (its
+`content/pack.json` names it as `"$contentFile"`); `/arcade content` says
+which file yours is.
 
 Your file uses the same shape as `content/default.json`, but only needs what
 you want to change. Anything you leave out keeps its built-in value. After
@@ -15,7 +19,7 @@ to see whether it loaded and what, if anything, was wrong with it.
 
 The easiest way: ask Claude, for example
 
-> Add a rival called "Yak Shaver" to my loader-arcade content, brown, with a
+> Add a rival called "Yak Shaver" to my unhinged arcade content, brown, with a
 > taunt about one more thing first.
 
 and point it at this file for the format.

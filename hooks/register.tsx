@@ -7,17 +7,17 @@ import { DEFAULT_PACING, actAt, pacingFor, pickFresh, remember } from './acts'
 import type { Actor } from './actors'
 import { ARENA_ROWS } from './arena'
 import { beachCells, beginBeach, createBeach, stepBeach } from './beach'
-import { CONTENT_PATH, PACK_PATH, applyContent } from './content'
+import { CONTENT_PATH, applyContent } from './content'
 import { beginCruise, createCruise, cruiseCells, stepCruise } from './cruise'
 import { beginDojoTurn, createDojo, dojoActors, dojoCells, endDojoTurn, stepDojo } from './dojo'
 import { beginKnightTurn, createKnight, endKnightTurn, knightActors, knightCells, stepKnight } from './knight'
 import { beginMeditation, createMeditation, meditationCells, stepMeditation } from './meditation'
 import { beginShooterTurn, createShooter, endShooterTurn, shooterActors, shooterCells, stepShooter } from './shooter'
 
-const style = atom({ plugin: 'loader-arcade', key: 'style' } as const, 'fight')
-const isPreviewing = atom({ plugin: 'loader-arcade', key: 'isPreviewing' } as const, false)
-const isOutro = atom({ plugin: 'loader-arcade', key: 'isOutro' } as const, false)
-const imgFrame = atom({ plugin: 'loader-arcade', key: 'imgFrame' } as const, 0)
+const style = atom({ plugin: 'loader-arcade-unhinged', key: 'style' } as const, 'fight')
+const isPreviewing = atom({ plugin: 'loader-arcade-unhinged', key: 'isPreviewing' } as const, false)
+const isOutro = atom({ plugin: 'loader-arcade-unhinged', key: 'isOutro' } as const, false)
+const imgFrame = atom({ plugin: 'loader-arcade-unhinged', key: 'imgFrame' } as const, 0)
 
 const FRAME_MS = 66
 const PREVIEW_MS = 8000
@@ -355,16 +355,14 @@ async function readJson($: EngineInterface, file: string, notes: string[]) {
   }
 }
 
-// Lays the plugin's pack (an edition's extra cast), then the person's own
-// content file, over the built-in content.
+// Reads the person's content file, if any, over the built-in content.
 async function loadContent($: EngineInterface) {
   const home = (await $.env.get('HOME')) ?? ''
   band.contentFile = `${home}/${CONTENT_PATH}`
 
   const notes: string[] = []
-  const pack = await readJson($, `${band.root}/${PACK_PATH}`, notes)
   const own = await readJson($, band.contentFile, notes)
-  band.contentNotes = [...notes, ...applyContent(own, pack)]
+  band.contentNotes = [...notes, ...applyContent(own)]
 }
 
 const contentReport = async ($: EngineInterface) => {
@@ -379,7 +377,7 @@ const contentReport = async ($: EngineInterface) => {
     `Your content file: ${band.contentFile}`,
     status,
     `Format and examples: ${band.root}/CONTENT.md`,
-    'Ask Claude to edit it for you, e.g. "add a rival to my loader-arcade content", then run /arcade reload.',
+    'Ask Claude to edit it for you, e.g. "add a rival to my unhinged arcade content", then run /arcade reload.',
   ].join('\n')
 }
 

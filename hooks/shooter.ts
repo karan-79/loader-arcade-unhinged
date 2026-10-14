@@ -1,10 +1,10 @@
-// shooter: Pinch holds the line. Rivals run in from the right in
+// shooter: Clawd holds the line. Rivals run in from the right in
 // escalating waves: some hop over bullets, some wear helmets that take a hit,
-// and now and then a whole swarm rushes in. Pinch's pistol needs reloading;
+// and now and then a whole swarm rushes in. Clawd's pistol needs reloading;
 // powerups bring a spread shot, rapid fire, a laser, homing missiles, a tank
 // and a chopper. Every third wave a giant boss walks in and shoots back.
 //
-// A turn opens in acts (see acts.ts): Pinch practises or gears up alone, then
+// A turn opens in acts (see acts.ts): Clawd practises or gears up alone, then
 // something happens (a scout, a noise, a stray rival, an airdrop), then the
 // fight is on, then a set piece, then the full loop.
 
@@ -109,10 +109,10 @@ const OUTRO_FLEE_SPEED = 70
 const TAUNT_CHANCE = 0.08
 const ROCKET = { body: 0x4a5530, tip: 0xff5c5c }
 const BAZOOKA = { tube: 0x4a5530, rim: 0x2e2e2e }
-// The bazooka rests on the shell, under Pinch's eye stalks.
-const BAZOOKA_ROW = 2
+// The bazooka rests on top of Clawd's head.
+const BAZOOKA_ROW = 0
 
-// Pinch in a tank, army helmet on, popping out of the hatch; facing right.
+// Clawd in a tank, army helmet on, popping out of the hatch; facing right.
 export const TANK = [
   '.....hhhh...........',
   '....hhhhhh..........',
@@ -135,7 +135,7 @@ export const TANK_PALETTE = {
   v: 0x5a5a5a,
 }
 
-// Pinch flying a chopper, in the window; facing right.
+// Clawd flying a chopper, in the window; facing right.
 export const CHOPPER = [
   '..rrrrrrrrrrrrrr..',
   '.........m........',
@@ -195,12 +195,12 @@ type SetPiece = 'boss' | 'swarm' | 'airdrop'
 const INCIDENTS: readonly Incident[] = ['scout', 'spotted', 'stray', 'airdrop']
 const SET_PIECES: readonly SetPiece[] = ['boss', 'swarm', 'airdrop']
 
-// Scenery Pinch practises on: cans on a crate, a target board, sandbags. A
+// Scenery Clawd practises on: cans on a crate, a target board, sandbags. A
 // shot can flies off; a target keeps its holes; a bag drops into place.
 type Prop = { kind: 'can' | 'crate' | 'target' | 'sandbag'; x: number; y: number; vx: number; vy: number; isDown: boolean; holes: number[] }
 
 // A supply crate under a parachute; it opens on landing and its powerups fly
-// to Pinch.
+// to Clawd.
 type Airdrop = { x: number; y: number; age: number; isOpen: boolean; powers: Power[] }
 
 // Who is talking, what they say, and for a cutscene line what happens with it.
@@ -326,7 +326,7 @@ export const chopperAt = (shooter: Shooter, columns: number) => ({
   y: 1 + Math.round(Math.sin(shooter.seconds * 3)),
 })
 
-// What can be hit: Pinch on foot, in the tank, or in the chopper.
+// What can be hit: Clawd on foot, in the tank, or in the chopper.
 const heroBox = (shooter: Shooter, columns: number) => {
   const vehicle = vehicleOf(shooter)
 
@@ -376,7 +376,7 @@ const chatter = (shooter: Shooter, who: Speaker, text: string) => {
 
 const isTalking = (shooter: Shooter) => shooter.scene.length > 0
 
-// A boss's entrance: it introduces itself and brags. Pinch shrugs it off, or,
+// A boss's entrance: it introduces itself and brags. Clawd shrugs it off, or,
 // when it will not stop talking, says "meh" and brings out a bazooka.
 const bossIntro = (shooter: Shooter, boss: Boss, random: () => number): Line[] => {
   const name = rivalAt(boss.rival).label
@@ -470,7 +470,7 @@ const spawnEnemy = (shooter: Shooter, columns: number, random: () => number, riv
   return enemy
 }
 
-// A rival dropping in from above at `x`, to land and run at Pinch.
+// A rival dropping in from above at `x`, to land and run at Clawd.
 const dropIn = (enemy: Enemy, x: number) => {
   enemy.x = Math.round(x)
   enemy.lift = 9
@@ -512,7 +512,7 @@ const knockOut = (shooter: Shooter, enemy: Enemy, columns: number, random: () =>
     popWord(shooter.pops, pickFrom(['NICE', 'COMBO', 'BOOM'], random), enemy.x)
   }
 
-  // Pinch is on a roll, and says so.
+  // Clawd is on a roll, and says so.
   if (shooter.waves.combo > 0 && shooter.waves.combo % 5 === 0) {
     say(shooter, 'hero', pick(HERO_LINES.streak, random))
   } else if (random() < 0.06) {
@@ -595,7 +595,7 @@ const explode = (shooter: Shooter, x: number, y: number, radius: number, columns
   }
 }
 
-// A scout is only looking: Pinch holds fire.
+// A scout is only looking: Clawd holds fire.
 const isTarget = (enemy: Enemy) => enemy.ko === null && !enemy.isFleeing && enemy.stopAt === null
 
 const nearestTarget = (shooter: Shooter, x: number) => {
@@ -849,7 +849,7 @@ const stepProjectiles = (shooter: Shooter, seconds: number, columns: number, ran
   }
   shooter.rockets = rockets
 
-  // The boss's shots fly at Pinch; they sting but Pinch holds.
+  // The boss's shots fly at Clawd; they sting but Clawd holds.
   const box = heroBox(shooter, columns)
   for (const shot of shooter.shots) {
     shot.x -= 40 * seconds
@@ -913,7 +913,7 @@ const dropBag = (shooter: Shooter, index: number) => {
   shooter.props.push({ kind: 'sandbag', x: bagsX(shooter) + index * 4, y: -3, vx: 0, vy: 0, isDown: false, holes: [] })
 }
 
-// What Pinch can do alone depends on what it holds: target practice needs
+// What Clawd can do alone depends on what it holds: target practice needs
 // the pistol (or a spread or rapid one); in a vehicle it can only dig in.
 const preludesFor = (shooter: Shooter): Prelude[] => {
   const kind = shooter.power?.kind
@@ -925,7 +925,7 @@ const preludesFor = (shooter: Shooter): Prelude[] => {
   return kind === 'laser' || kind === 'missile' ? ['reload', 'sandbags'] : ['cans', 'target', 'reload', 'sandbags']
 }
 
-// Act 0: Pinch on its own, getting ready.
+// Act 0: Clawd on its own, getting ready.
 const startPrelude = (shooter: Shooter, columns: number, random: () => number) => {
   const prelude = pickFresh(preludesFor(shooter), shooter.prelude ?? undefined, random)
   shooter.prelude = prelude
@@ -1048,7 +1048,7 @@ const startIncident = (shooter: Shooter, columns: number, random: () => number) 
 
   switch (incident) {
     case 'scout': {
-      // A rival wanders in, sees Pinch, and runs to tell the others.
+      // A rival wanders in, sees Clawd, and runs to tell the others.
       const scout = spawnEnemy(shooter, columns, random, pickRival(random), 32)
       scout.x = columns - 2
       scout.armor = 0
@@ -1057,7 +1057,7 @@ const startIncident = (shooter: Shooter, columns: number, random: () => number) 
       break
     }
     case 'spotted':
-      // Pinch hears something; two rivals drop in a beat later.
+      // Clawd hears something; two rivals drop in a beat later.
       popWord(shooter.pops, '!', HERO_LEFT + 5)
       later(shooter.chat, 'hero', pick(HERO_LINES.spotted, random), 0.4, 1.3)
       break
@@ -1139,7 +1139,7 @@ const stepActs = (shooter: Shooter, seconds: number, columns: number, random: ()
 }
 
 // A new turn: the session's score, wave and powerup stay; the field is
-// cleared and Pinch starts on its own. A boss left standing comes back later.
+// cleared and Clawd starts on its own. A boss left standing comes back later.
 export const beginShooterTurn = (shooter: Shooter, columns: number, random: () => number = Math.random) => {
   if (shooter.boss !== null && shooter.boss.ko === null) {
     shooter.isBossPending = true
@@ -1180,8 +1180,8 @@ export const beginShooterTurn = (shooter: Shooter, columns: number, random: () =
   startPrelude(shooter, columns, random)
 }
 
-// The turn is over: rivals near Pinch get one last pinch, the rest run off, a
-// boss backs away (it will be back), and Pinch signs off.
+// The turn is over: rivals near Clawd get one last pinch, the rest run off, a
+// boss backs away (it will be back), and Clawd signs off.
 export const endShooterTurn = (shooter: Shooter, columns: number, random: () => number = Math.random) => {
   shooter.isOutro = true
   shooter.scene = []
@@ -1376,7 +1376,7 @@ export const stepShooter = (shooter: Shooter, seconds: number, columns: number, 
   fire(shooter, seconds, columns, random)
   stepProjectiles(shooter, seconds, columns, random)
 
-  // On the ground, anything that reaches Pinch gets pinched or run over; under
+  // On the ground, anything that reaches Clawd gets pinched or run over; under
   // a chopper they slip past.
   const vehicle = vehicleOf(shooter)
   const box = heroBox(shooter, columns)
@@ -1450,7 +1450,7 @@ const drawVehicle = (canvas: Canvas, shooter: Shooter, columns: number) => {
     return
   }
 
-  // The bazooka rests on Pinch's shoulder, the gun put away.
+  // The bazooka rests on Clawd's shoulder, the gun put away.
   if (shooter.bazooka) {
     drawHero(canvas, 'idle', 1, HERO_LEFT, GROUND, { flash: isHurt ? 1 : 0 })
 
@@ -1664,7 +1664,7 @@ export const shooterCells = (shooter: Shooter, columns: number, rows: number, wi
   return packCanvas(canvas, hudOverlays(hud, shooter.pops, columns, speechOf(shooter, columns)))
 }
 
-// Where each line is said: over Pinch (or its ride), the boss, or a rival.
+// Where each line is said: over Clawd (or its ride), the boss, or a rival.
 const speechOf = (shooter: Shooter, columns: number): Speech[] => {
   const box = heroBox(shooter, columns)
 
@@ -1685,7 +1685,7 @@ const speechOf = (shooter: Shooter, columns: number): Speech[] => {
 }
 
 // The -img style's pictures: rivals running or knocked out, the boss, and
-// Pinch on foot, in the tank or in the chopper.
+// Clawd on foot, in the tank or in the chopper.
 export const shooterActors = (shooter: Shooter, columns: number): Actor[] => {
   const actors: Actor[] = []
   const place = (character: object, file: string, left: number, topPixel: number, width: number, rows: number) =>

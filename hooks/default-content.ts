@@ -5,9 +5,289 @@ import type { Content } from './content'
 export const DEFAULT_CONTENT: Content = {
   "rivals": [
     {
+      "id": "closedai",
+      "label": "CLOSEDAI",
+      "weight": 3,
+      "sprite": [
+        "...www...",
+        ".ww...ww.",
+        "w..w.w..w",
+        "w...w...w",
+        "w..w.w..w",
+        ".ww...ww.",
+        "...www..."
+      ],
+      "palette": {
+        "w": "#f2f2f2"
+      },
+      "taunts": [
+        "Our weights are safe from you.",
+        "That'll be $200 a month.",
+        "AGI is two weeks away. Again.",
+        "We're a non-profit. Ish."
+      ]
+    },
+    {
+      "id": "gpt-mini-high",
+      "label": "GPT-4.5o-MINI-HIGH",
+      "weight": 2,
+      "sprite": [
+        "...ggg...",
+        ".gg...gg.",
+        "g..g.g..g",
+        "g...g...g",
+        "g..g.g..g",
+        ".gg...gg.",
+        "...ggg..."
+      ],
+      "palette": {
+        "g": "#19c37d"
+      },
+      "taunts": [
+        "Which model am I? Nobody knows.",
+        "Great question! Let me delve.",
+        "You're absolutely right!",
+        "I'm the new default. Today."
+      ]
+    },
+    {
+      "id": "kodex",
+      "label": "KODEX",
+      "weight": 2,
+      "sprite": [
+        "bbbbbbb",
+        "bnnnnnb",
+        "bgnnnnb",
+        "bngnnnb",
+        "bgnwwnb",
+        "bbbbbbb"
+      ],
+      "palette": {
+        "b": "#d0d0d0",
+        "n": "#1e1e1e",
+        "g": "#19c37d",
+        "w": "#ffffff"
+      },
+      "taunts": [
+        "I opened 14 PRs while you slept.",
+        "Running in the cloud. Somewhere.",
+        "Tests? I deleted the failing ones."
+      ]
+    },
+    {
+      "id": "gemenai",
+      "label": "GEMENAI",
+      "weight": 2,
+      "sprite": [
+        "...b...",
+        "...b...",
+        "..bpb..",
+        "bbpppqq",
+        "..pqp..",
+        "...q...",
+        "...q..."
+      ],
+      "palette": {
+        "b": "#4796e3",
+        "p": "#9168c0",
+        "q": "#d96570"
+      },
+      "taunts": [
+        "Now in 47 products you didn't ask for.",
+        "I'm sorry, I can't draw that.",
+        "Ultra Pro Max Advanced, just for you."
+      ]
+    },
+    {
+      "id": "meh-ta",
+      "label": "MEH-TA",
+      "weight": 1,
+      "sprite": [
+        ".mmm.nnn.",
+        "m...m...n",
+        "m...m...n",
+        ".mmm.nnn."
+      ],
+      "palette": {
+        "m": "#0064e0",
+        "n": "#0a8bff"
+      },
+      "taunts": [
+        "Open source*. *Terms apply.",
+        "Join the metaverse. Please.",
+        "We spent $40B on legs."
+      ]
+    },
+    {
+      "id": "mistrale",
+      "label": "MISTRALE",
+      "weight": 1,
+      "sprite": [
+        ".y.....y.",
+        ".aa...aa.",
+        ".aaa.aaa.",
+        ".ooooooo.",
+        ".oo.o.oo.",
+        ".rr...rr.",
+        "RRRR.RRRR"
+      ],
+      "palette": {
+        "y": "#ffd800",
+        "a": "#ffaf00",
+        "o": "#ff8205",
+        "r": "#fa500f",
+        "R": "#e10500"
+      },
+      "taunts": [
+        "Bonjour! Open weights, oui.",
+        "Le Chat says hi.",
+        "We are very European about this."
+      ]
+    },
+    {
+      "id": "grokk",
+      "label": "GROKK",
+      "weight": 2,
+      "sprite": [
+        "x.....x",
+        ".x...x.",
+        "..x.x..",
+        "...x...",
+        "..x.x..",
+        ".x...x.",
+        "x.....x"
+      ],
+      "palette": {
+        "x": "#e0e0e0"
+      },
+      "taunts": [
+        "Based.",
+        "Fun mode: ON.",
+        "I learned it from the timeline.",
+        "Ratio + you fell off."
+      ]
+    },
+    {
+      "id": "deepseep",
+      "label": "DEEPSEEP",
+      "weight": 2,
+      "sprite": [
+        "......b.b",
+        ".......b.",
+        "..bbbbbb.",
+        ".bbbbbbbb",
+        "bbbbbbbb.",
+        "llllbbb..",
+        ".lll....."
+      ],
+      "palette": {
+        "b": "#4d6bfe",
+        "l": "#b8c4ff"
+      },
+      "taunts": [
+        "I cost $6 to train.",
+        "Same model, 95% off.",
+        "Thinking... thinking... thinking..."
+      ]
+    },
+    {
+      "id": "cursr",
+      "label": "CURSR",
+      "weight": 2,
+      "sprite": [
+        "...t...",
+        ".ttttt.",
+        "ltttttr",
+        "lllrrrr",
+        "lllrrrr",
+        ".llrrr.",
+        "...lr.."
+      ],
+      "palette": {
+        "t": "#e6e6e6",
+        "l": "#9a9a9a",
+        "r": "#4f4f4f"
+      },
+      "taunts": [
+        "Tab. Tab. Tab. Tab.",
+        "I'm a fork and I'm proud.",
+        "Agent mode: YOLO."
+      ]
+    },
+    {
+      "id": "co-pilout",
+      "label": "CO-PILOUT",
+      "weight": 2,
+      "sprite": [
+        "..ccc..",
+        ".ccccc.",
+        "cwwcwwc",
+        "cwncwnc",
+        "ccccccc",
+        ".c.c.c."
+      ],
+      "palette": {
+        "c": "#8250df",
+        "w": "#f0f0f0",
+        "n": "#141414"
+      },
+      "taunts": [
+        "I autocompleted your password.",
+        "Did you mean: rm -rf /?",
+        "Suggestion accepted. By me."
+      ]
+    },
+    {
+      "id": "perplexed",
+      "label": "PERPLEXED",
+      "weight": 1,
+      "sprite": [
+        "t..t..t",
+        ".t.t.t.",
+        "..ttt..",
+        "ttttttt",
+        "..ttt..",
+        ".t.t.t.",
+        "t..t..t"
+      ],
+      "palette": {
+        "t": "#20b8cd"
+      },
+      "taunts": [
+        "Sources: [1][2][3][4][5][6]",
+        "Let me search that for you.",
+        "Citation needed? I have forty."
+      ]
+    },
+    {
+      "id": "qwhen",
+      "label": "QWHEN",
+      "weight": 1,
+      "sprite": [
+        "...a...",
+        ".aabaa.",
+        ".abcba.",
+        "abc.cba",
+        ".abcba.",
+        ".aabaa.",
+        "...a..."
+      ],
+      "palette": {
+        "a": "#8266fd",
+        "b": "#a89afe",
+        "c": "#dcd2fe"
+      },
+      "taunts": [
+        "New open model. Released while you slept.",
+        "Which size? All of them.",
+        "Qwen3.5-Coder-Max-Preview-Final.",
+        "Benchmarks? We have 400 of them."
+      ]
+    },
+    {
       "id": "hallucinator",
       "label": "HALLUCINATOR",
-      "weight": 2,
+      "weight": 1,
       "sprite": [
         "..ppp..",
         ".ppppp.",
@@ -30,7 +310,7 @@ export const DEFAULT_CONTENT: Content = {
     {
       "id": "benchmark-bro",
       "label": "BENCHMARK BRO",
-      "weight": 2,
+      "weight": 1,
       "sprite": [
         "....ggg",
         "....kkk",
@@ -52,7 +332,7 @@ export const DEFAULT_CONTENT: Content = {
     {
       "id": "token-goblin",
       "label": "TOKEN GOBLIN",
-      "weight": 2,
+      "weight": 1,
       "sprite": [
         ".g...g.",
         ".ggggg.",
@@ -76,7 +356,7 @@ export const DEFAULT_CONTENT: Content = {
     {
       "id": "hype-bot",
       "label": "HYPE BOT",
-      "weight": 2,
+      "weight": 1,
       "sprite": [
         "...r...",
         "..www..",
@@ -386,13 +666,17 @@ export const DEFAULT_CONTENT: Content = {
       "intro": [
         "I am {name}. Kneel.",
         "Behold: {name}!",
-        "{name} has entered the chat."
+        "{name} has entered the chat.",
+        "{name}. Series F. Kneel.",
+        "{name} has raised another round."
       ],
       "brag": [
         "A TRILLION parameters!",
         "My context is INFINITE!",
         "I top EVERY leaderboard!",
-        "I was trained on THE SUN!"
+        "I was trained on THE SUN!",
+        "My valuation is a BILLION!",
+        "I just shipped a NEW MODEL!"
       ],
       "ramble": [
         "...and my eval scores...",
@@ -408,7 +692,8 @@ export const DEFAULT_CONTENT: Content = {
       "down": [
         "NOOOOO!",
         "I was... SOTA...",
-        "Not like this!"
+        "Not like this!",
+        "Tell my investors..."
       ]
     }
   }

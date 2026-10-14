@@ -107,7 +107,7 @@ test('the outro clears the field and the next turn keeps the score', async () =>
   expect(shooter.waves.kos).toBeGreaterThanOrEqual(kos)
   expect(shooter.enemies.length).toBe(0)
   expect(shooter.isOutro).toBe(false)
-  // Never the same opening twice running (unless only one fits what Pinch holds).
+  // Never the same opening twice running (unless only one fits what Clawd holds).
   if (shooter.power === null) {
     expect(shooter.prelude).not.toBe(prelude)
   }

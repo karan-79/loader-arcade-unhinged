@@ -198,25 +198,6 @@ test("a person's content file adds rivals, changes lines, and reports mistakes",
   expect(HERO_LINES.streak).not.toEqual(['Easy money.'])
 })
 
-test("an edition's pack adds to the cast, and a person's file still goes over it", async () => {
-  const pack = {
-    rivals: [
-      { id: 'packed', label: 'PACKED', weight: 3, sprite: ['ppp', 'pkp'], palette: { p: '#123456', k: '#141414' }, taunts: ['From the pack.'] },
-      { id: 'hallucinator', weight: 0 },
-    ],
-    lines: { boss: { intro: ['{name} rides again.'] } },
-  }
-  const notes = applyContent({ rivals: [{ id: 'packed', label: 'REPACKED' }] }, pack)
-
-  expect(notes).toEqual([])
-  expect(rivals().find(rival => rival.id === 'packed')?.label).toBe('REPACKED')
-  expect(rivals().find(rival => rival.id === 'packed')?.hasPicture).toBe(false)
-  expect(rivals().find(rival => rival.id === 'hallucinator')?.weight).toBe(0)
-
-  expect(applyContent(undefined, { rivals: 'nope' }).some(note => note.startsWith('the pack:'))).toBe(true)
-  applyContent(undefined)
-})
-
 test('the animation plays above the prompt only while Claude works', async ($, on) => {
   mock.clock(on)
   on('ui.render', ($, e) => {
@@ -225,7 +206,7 @@ test('the animation plays above the prompt only while Claude works', async ($, o
   })
 
   const working = await $.ui.mount({
-    plugin: 'loader-arcade',
+    plugin: 'loader-arcade-unhinged',
     surface: 'terminal',
     component: 'AbovePrompt',
     props: band(true),
@@ -237,7 +218,7 @@ test('the animation plays above the prompt only while Claude works', async ($, o
 
   for (const surface of ['terminal', 'desktop'] as const) {
     const idle = await $.ui.mount({
-      plugin: 'loader-arcade',
+      plugin: 'loader-arcade-unhinged',
       surface,
       component: 'AbovePrompt',
       props: band(surface === 'desktop'),

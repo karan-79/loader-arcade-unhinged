@@ -1,9 +1,9 @@
-// dojo: Pinch runs into the middle of the dojo and takes on every rival
+// dojo: Clawd runs into the middle of the dojo and takes on every rival
 // that comes at it from either side: karate chops, flying kicks, uppercuts,
 // judo throws, and a spinning kick when they come at once. Waves escalate,
 // powerups drop (rage, giant), and every third wave a boss steps in.
 //
-// A turn plays as acts (see acts.ts): Pinch trains alone (a kata, boards or
+// A turn plays as acts (see acts.ts): Clawd trains alone (a kata, boards or
 // bricks to break, a sandbag, shadowboxing), something happens (a scout, an
 // ambush, a rival barging in or dropping through the roof), the fight is on,
 // then a set piece (a boss, a rush, a powerup) before the full loop.
@@ -164,13 +164,13 @@ type Boss = {
   vx: number
   vy: number
   hasSpoken: boolean
-  // While above zero the boss is mid-speech, and Pinch lets it finish.
+  // While above zero the boss is mid-speech, and Clawd lets it finish.
   hush: number
   // The turn ended before it went down: it backs off, to come back later.
   isLeaving: boolean
 }
 
-// Pinch's training before anything turns up.
+// Clawd's training before anything turns up.
 type Drill = { kind: Prelude; seconds: number; isBroken: boolean; swing: number; swingSpeed: number }
 
 // Something set to happen a little later in an incident or a set piece.
@@ -263,7 +263,7 @@ const isRaging = (dojo: Dojo) => dojo.power?.kind === 'rage'
 const bodyWidth = (dojo: Dojo) => (isGiant(dojo) ? Math.round((BODY_WIDTH * GIANT_HEIGHT) / POSE_ROWS) : BODY_WIDTH)
 const bossWidth = (boss: Boss) => spriteOf(boss.rival, BOSS_HEIGHT)[0]?.length ?? 10
 
-// Where a rival stops, toe to toe with Pinch.
+// Where a rival stops, toe to toe with Clawd.
 const contactX = (dojo: Dojo, side: 1 | -1, width: number) =>
   side > 0 ? dojo.x + bodyWidth(dojo) + 1 : dojo.x - 1 - width
 
@@ -271,7 +271,7 @@ const foeContact = (dojo: Dojo, foe: Foe) => contactX(dojo, foe.side, widthOf(ri
 
 const heroEdge = (dojo: Dojo, side: 1 | -1) => (side > 0 ? dojo.x + bodyWidth(dojo) + 1 : dojo.x - 1)
 
-// Where a held rival is during a throw: over Pinch's head, front to back.
+// Where a held rival is during a throw: over Clawd's head, front to back.
 const heldAt = (dojo: Dojo, foe: Foe) => {
   const width = widthOf(rivalAt(foe.rival))
   const progress = clamp(dojo.moveSeconds / MOVES.throw.hitAt, 0, 1)
@@ -311,7 +311,7 @@ const spawnBoss = (dojo: Dojo, columns: number, random: () => number) => {
 type Entry = { side?: 1 | -1; rival?: number; x?: number; lift?: number; state?: Foe['state']; arriveIn?: number }
 
 // A rival from one side: from the edge unless `x` says otherwise. With
-// `arriveIn` it sprints to Pinch in about that many seconds.
+// `arriveIn` it sprints to Clawd in about that many seconds.
 const spawnFoe = (dojo: Dojo, columns: number, random: () => number, entry: Entry = {}) => {
   const side = entry.side ?? (random() < 0.5 ? 1 : -1)
   const rival = entry.rival ?? pickRival(random)
@@ -338,7 +338,7 @@ const spawnFoe = (dojo: Dojo, columns: number, random: () => number, entry: Entr
   return foe
 }
 
-// A rival that drops through the roof a little way out from Pinch.
+// A rival that drops through the roof a little way out from Clawd.
 const dropIn = (dojo: Dojo, columns: number, random: () => number, side: 1 | -1, gap: number) => {
   const foe = spawnFoe(dojo, columns, random, { side, lift: DROP_HEIGHT })
   foe.x = foeContact(dojo, foe) + side * gap
@@ -446,7 +446,7 @@ const stepBoss = (dojo: Dojo, boss: Boss, seconds: number, columns: number, rand
   boss.x = boss.side > 0 ? Math.max(stop, boss.x - walk) : Math.min(stop, boss.x + walk)
   boss.untilAttack -= seconds
 
-  // Toe to toe for the first time: the boss introduces itself; Pinch is unmoved.
+  // Toe to toe for the first time: the boss introduces itself; Clawd is unmoved.
   if (!boss.hasSpoken && Math.abs(boss.x - stop) < 1) {
     boss.hasSpoken = true
     boss.untilAttack = 3.6
@@ -467,7 +467,7 @@ const stepBoss = (dojo: Dojo, boss: Boss, seconds: number, columns: number, rand
   boss.lunge += seconds
   boss.lift = 2 * Math.sin(Math.min(1, boss.lunge / LUNGE_SECONDS) * Math.PI)
 
-  // The lunge lands: Pinch blocks it or takes it.
+  // The lunge lands: Clawd blocks it or takes it.
   if (boss.lunge >= LUNGE_IMPACT && boss.lunge - seconds < LUNGE_IMPACT) {
     const at = heroEdge(dojo, boss.side)
     dojo.facing = boss.side
@@ -578,10 +578,10 @@ const touchDown = (dojo: Dojo, foe: Foe, random: () => number) => {
   popWord(dojo.pops, 'THUD!', foe.x + width / 2)
 }
 
-// Where the training prop stands: just past Pinch's reach, to the right.
+// Where the training prop stands: just past Clawd's reach, to the right.
 const propX = (dojo: Dojo) => Math.round(dojo.x) + 14
 
-// Pinch's stance while training: the pose, the way it faces, and a hop.
+// Clawd's stance while training: the pose, the way it faces, and a hop.
 const drillLook = (drill: Drill): { pose: Pose; facing: 1 | -1; lift: number } => {
   const t = drill.seconds
 
@@ -811,7 +811,7 @@ const openAct = (dojo: Dojo, act: Act, columns: number, random: () => number) =>
 }
 
 // A new turn: the session's waves, knockouts and powerup carry on, the floor
-// is cleared, and Pinch is back in the middle, training.
+// is cleared, and Clawd is back in the middle, training.
 export const beginDojoTurn = (dojo: Dojo, columns: number, random: () => number = Math.random) => {
   const kind = pickFresh(PRELUDES, dojo.lastPrelude, random)
 
@@ -843,7 +843,7 @@ export const beginDojoTurn = (dojo: Dojo, columns: number, random: () => number 
 }
 
 // The turn is over: rivals up close get one last hit, the rest run, a boss
-// backs off (it will be back), and Pinch signs off.
+// backs off (it will be back), and Clawd signs off.
 export const endDojoTurn = (dojo: Dojo, columns: number, random: () => number = Math.random) => {
   dojo.isOutro = true
   dojo.cues = []
@@ -1047,7 +1047,7 @@ export const stepDojo = (dojo: Dojo, seconds: number, columns: number, random: (
   stepTalk(dojo.chat, seconds)
 }
 
-// Where each line is said: over Pinch, the boss, or a rival.
+// Where each line is said: over Clawd, the boss, or a rival.
 const speechOf = (dojo: Dojo): Speech[] =>
   dojo.chat.bubbles.flatMap(bubble => {
     if (bubble.who === 'hero') {
@@ -1163,7 +1163,7 @@ export const dojoCells = (dojo: Dojo, columns: number, rows: number, withActors 
 }
 
 // The -img style's pictures: rivals (facing the way they came), the one being
-// thrown, the boss, and Pinch, giant or raging as the powerup says.
+// thrown, the boss, and Clawd, giant or raging as the powerup says.
 export const dojoActors = (dojo: Dojo): Actor[] => {
   const actors: Actor[] = []
   const place = (character: object, file: string, left: number, topPixel: number, width: number, rows: number) =>

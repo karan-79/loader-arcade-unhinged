@@ -1,4 +1,4 @@
-// Speech bubbles for Pinch's fights: one line per speaker at a time. Idle
+// Speech bubbles for Clawd's fights: one line per speaker at a time. Idle
 // chatter waits out a cooldown so it never crowds the line; scripted lines
 // (`say`) go up at once.
 

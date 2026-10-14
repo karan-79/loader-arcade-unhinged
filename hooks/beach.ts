@@ -1,9 +1,9 @@
-// chill-beach: Pinch's day at the beach. Over the acts: lounging under an
-// umbrella in sunglasses, a gull flies over, Pinch builds a sandcastle, a big
+// chill-beach: Clawd's day at the beach. Over the acts: lounging under an
+// umbrella in sunglasses, a gull flies over, Clawd builds a sandcastle, a big
 // wave takes it as the sun sets, then night falls by a bonfire.
 
 import type { Act } from './acts'
-import { drawHero } from './hero'
+import { EYE_COLUMNS, EYE_ROW, drawHero } from './hero'
 import type { Canvas, Overlay } from './raster'
 import { clamp, createCanvas, mix, noise, packCanvas, plot, plotSprite } from './raster'
 
@@ -23,7 +23,7 @@ const SHADES = 0x141414
 const UMBRELLA = ['.rwrwrwrwr.', 'rwrwrwrwrwr', ...Array.from({ length: 8 }, () => '.....p.....')]
 const UMBRELLA_PALETTE = { r: 0xe0453a, w: 0xf6f0e6, p: 0xb0a090 }
 
-// The sandcastle, drawn up to as many pixels as Pinch has built.
+// The sandcastle, drawn up to as many pixels as Clawd has built.
 const CASTLE = ['c.c.c', 'ccccc', 'cc.cc', 'ccccc']
 const CASTLE_PIXELS = CASTLE.join('').split('').filter(pixel => pixel === 'c').length
 const CASTLE_COLOR = 0xd9b26f
@@ -101,7 +101,7 @@ export const stepBeach = (scene: Beach, seconds: number, columns: number, random
       scene.castle = Math.min(CASTLE_PIXELS, scene.castle + (CASTLE_PIXELS / BUILD_SECONDS) * seconds)
     }
   } else if (scene.act === 3) {
-    // The wave washes the castle away; Pinch scurries back to the umbrella.
+    // The wave washes the castle away; Clawd scurries back to the umbrella.
     scene.castle = Math.max(0, scene.castle - swashOf(scene) * CASTLE_PIXELS * seconds * 2)
     scene.isCastleStanding = scene.castle > 0
     scene.x = Math.max(loungeX(columns), scene.x - WALK_SPEED * 1.6 * seconds)
@@ -214,7 +214,7 @@ export const beachCells = (scene: Beach, columns: number, rows: number) => {
     }
   }
 
-  // Pinch: lounging in shades, walking out, patting the castle, or fleeing the wave.
+  // Clawd: lounging in shades, walking out, patting the castle, or fleeing the wave.
   const isBuilding = scene.act === 2 && scene.x >= castleX(columns) - 13
   const isWalking = (scene.act === 2 && !isBuilding) || (scene.act >= 3 && scene.x > loungeX(columns))
   const pose = isBuilding ? (Math.floor(scene.seconds * 4) % 2 === 0 ? 'punch' : 'idle') : isWalking && Math.floor(scene.seconds * 8) % 2 === 0 ? 'stride' : 'idle'
@@ -223,8 +223,10 @@ export const beachCells = (scene: Beach, columns: number, rows: number) => {
   const { top } = drawHero(canvas, pose, facing, scene.x, ground, { lift })
 
   if (scene.act <= 1 || (scene.act >= 4 && scene.x <= loungeX(columns))) {
-    for (const dx of [2, 3, 8, 9]) {
-      plot(canvas, scene.x + dx, top, SHADES)
+    for (const eye of EYE_COLUMNS) {
+      for (const dx of [-1, 0, 1]) {
+        plot(canvas, scene.x + eye + dx, top + EYE_ROW, SHADES)
+      }
     }
   }
 

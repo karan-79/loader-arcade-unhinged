@@ -1,5 +1,5 @@
-// Pinch, the hero: a parody crab with its eyes up on stalks and a pincer out
-// front, in 8 pixel rows (4 cell rows), facing right.
+// Clawd, the hero: the Claude Code mascot, in 8 pixel rows (4 cell rows),
+// facing right.
 // Every pose is POSE_WIDTH wide with the body in its first BODY_WIDTH columns,
 // so arms and legs can reach past it; `poseFacing` mirrors one to face left.
 
@@ -8,9 +8,8 @@ import { mirror, plotSprite } from './raster'
 import { scaleSprite } from './rivals'
 
 export const HERO_PALETTE: Readonly<Record<string, number>> = {
-  o: 0xe8613c, // shell
-  W: 0xffffff, // eye
-  K: 0x141414, // pupil
+  o: 0xd97757, // Clawd
+  K: 0x141414, // eyes
   g: 0x9aa0a8, // barrel
   G: 0x5c6068, // grip
 }
@@ -23,19 +22,20 @@ export const ARM_ROW = 4
 
 const pad = (rows: readonly string[]) => rows.map(row => row.padEnd(POSE_WIDTH, '.'))
 
-// Eyes up on stalks, then the shell; the front pincer opens at the arm row.
-const EYES = ['..WK....WK..', '...o.....o..']
-const SHELL = '.oooooooooo.'
-const PINCER = { top: '.oooooooooo.oo', arm: 'ooooooooooooo.', bottom: '.oooooooooo.oo' }
+// The eyes: two pixels tall, in these columns from this pixel row down.
+export const EYE_ROW = 2
+export const EYE_COLUMNS = [3, 8] as const
+
+const HEAD = ['.oooooooooo.', '.oooooooooo.', '.ooKooooKoo.', '.ooKooooKoo.']
 const LEGS = ['.o.o....o.o.', '.o.o....o.o.']
 
 export const POSES = {
-  idle: pad([...EYES, SHELL, PINCER.top, PINCER.arm, PINCER.bottom, ...LEGS]),
-  stride: pad([...EYES, SHELL, PINCER.top, PINCER.arm, PINCER.bottom, '..o.o..o.o..', '.o...o....o.']),
-  gun: pad([...EYES, SHELL, SHELL, 'oooooooooooooggg', '.oooooooooo..G..', ...LEGS]),
-  punch: pad([...EYES, SHELL, '.oooooooooo....o', 'ooooooooooooooo.', '.oooooooooo....o', ...LEGS]),
-  kick: pad([...EYES, SHELL, PINCER.top, PINCER.arm, PINCER.bottom, '.o.o....oooooooo', '.o.o']),
-  lift: pad(['o.WK....WK.o', 'o..o.....o.o', SHELL, SHELL, SHELL, SHELL, ...LEGS]),
+  idle: pad([...HEAD, 'oooooooooooo', '.oooooooooo.', ...LEGS]),
+  stride: pad([...HEAD, 'oooooooooooo', '.oooooooooo.', '..o.o..o.o..', '.o...o....o.']),
+  gun: pad([...HEAD, 'oooooooooooooggg', '.oooooooooo..G..', ...LEGS]),
+  punch: pad([...HEAD, 'oooooooooooooooo', '.oooooooooo.', ...LEGS]),
+  kick: pad([...HEAD, 'ooooooooooo.', '.oooooooooo.', '.o.o....oooooooo', '.o.o']),
+  lift: pad(['oooooooooooo', 'o.oooooooo.o', '.ooKooooKoo.', '.ooKooooKoo.', '.oooooooooo.', '.oooooooooo.', ...LEGS]),
 } as const
 
 export type Pose = keyof typeof POSES
@@ -49,7 +49,7 @@ const MIRRORED: Record<Pose, readonly string[]> = {
   lift: mirror(POSES.lift),
 }
 
-// The pose's rows and the column to draw them from, for Pinch's body at `x`.
+// The pose's rows and the column to draw them from, for Clawd's body at `x`.
 export const poseFacing = (pose: Pose, facing: 1 | -1, x: number) =>
   facing > 0
     ? { rows: POSES[pose], left: x }
@@ -69,7 +69,7 @@ export type HeroLook = {
 const RAGE_PALETTE = { ...HERO_PALETTE, o: 0xff4d2e }
 const FLASH_PALETTE = Object.fromEntries(Object.keys(HERO_PALETTE).map(key => [key, 0xffffff]))
 
-// Draws Pinch standing on `ground`, its body's left edge at `x`; answers the
+// Draws Clawd standing on `ground`, its body's left edge at `x`; answers the
 // rows it took and the scale it was drawn at.
 export const drawHero = (
   canvas: Canvas,

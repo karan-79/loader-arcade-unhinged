@@ -1,6 +1,6 @@
-// chill-meditation: Pinch sits cross-legged in the middle of the band and
+// chill-meditation: Clawd sits cross-legged in the middle of the band and
 // meditates. Over the acts the calm deepens: eyes close, breath ripples out
-// across the floor, a soft aura and fireflies, then Pinch floats, stones
+// across the floor, a soft aura and fireflies, then Clawd floats, stones
 // rise around it, and at last the aura burns gold.
 
 import type { Act } from './acts'
@@ -8,9 +8,9 @@ import { HERO_PALETTE } from './hero'
 import type { Canvas } from './raster'
 import { clamp, createCanvas, mix, noise, packCanvas, plot, plotSprite } from './raster'
 
-// Sitting, eyes shut, pincers folded in, legs tucked out to the sides.
-const SITTING = ['..KK....KK..', '...o.....o..', '.oooooooooo.', 'oooooooooooo', '.oooooooooo.', 'oo.o....o.oo']
-const EYES_OPEN = ['..WK....WK..', ...SITTING.slice(1)]
+// Sitting, eyes shut, arms folded in, legs tucked out to the sides.
+const SITTING = ['.oooooooooo.', '.oooooooooo.', '.ooKooooKoo.', 'oooooooooooo', '.oooooooooo.', 'oo.o....o.oo']
+const EYES_OPEN = ['.oooooooooo.', '.ooKooooKoo.', ...SITTING.slice(2)]
 const SIT_WIDTH = 12
 
 const FLOOR = 0x3a3226
@@ -52,7 +52,7 @@ export const beginMeditation = (scene: Meditation) => {
 const BREATH_SECONDS = 3.2
 const RIPPLE_SECONDS = 2.4
 
-// How high Pinch floats, in pixels: from act 3, easing up and bobbing.
+// How high Clawd floats, in pixels: from act 3, easing up and bobbing.
 const liftOf = (scene: Meditation) =>
   scene.act < 3 ? 0 : Math.min(1, (scene.act === 3 ? scene.actSeconds : 1) * 0.8) * (0.7 + 0.5 * Math.sin(scene.seconds * 1.6))
 
@@ -95,7 +95,7 @@ export const stepMeditation = (scene: Meditation, seconds: number, columns: numb
   }
 }
 
-// Pinch's rows and where each sits: the in-breath stretches the eye stalks,
+// Clawd's rows and where each sits: the in-breath stretches the eye stalks,
 // lifting the eyes a pixel.
 const placed = (sprite: readonly string[], top: number, breath: number) => [
   { row: sprite[0]!, y: top - breath },
@@ -104,7 +104,7 @@ const placed = (sprite: readonly string[], top: number, breath: number) => [
   ...sprite.slice(2).map((row, index) => ({ row, y: top + 2 + index })),
 ]
 
-// The aura: a glow hugging Pinch's outline, cool and soft at first; gold, with
+// The aura: a glow hugging Clawd's outline, cool and soft at first; gold, with
 // flames licking up off it, in act 4.
 const drawAura = (canvas: Canvas, scene: Meditation, rows: ReturnType<typeof placed>, left: number) => {
   const isGold = scene.act >= 4

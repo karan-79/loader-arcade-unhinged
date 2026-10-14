@@ -47,10 +47,7 @@ export type Lines = {
 export type Content = { rivals: RivalContent[]; lines: Lines }
 
 // Where a person's own content lives, under their home directory.
-export const CONTENT_PATH = '.claude/loader-arcade/content.json'
-
-// Where an edition of the plugin keeps its extra cast, under the plugin's root.
-export const PACK_PATH = 'content/pack.json'
+export const CONTENT_PATH = '.claude/loader-arcade-unhinged/content.json'
 
 const MAX_WIDTH = 9
 const MAX_HEIGHT = 7
@@ -200,18 +197,13 @@ const layContent = (raw: unknown, roster: Map<string, RivalContent>, lines: Line
   warnings.push(...notes.map(note => (from === '' ? note : `${from}: ${note}`)))
 }
 
-// Applies the built-in content, then a pack the plugin ships (an edition's
-// extra cast, if any), then `raw`, the person's own file; each is optional.
-// Answers what was wrong with them.
-export const applyContent = (raw: unknown, pack?: unknown): string[] => {
+// Applies the built-in content with `raw` (the person's parsed file, or
+// undefined) laid over it; answers what was wrong with the file.
+export const applyContent = (raw: unknown): string[] => {
   const warnings: string[] = []
   const defaults = new Map(DEFAULT_CONTENT.rivals.map(rival => [rival.id, rival]))
   const roster = new Map(DEFAULT_CONTENT.rivals.map(rival => [rival.id, rival]))
   const lines = copy(DEFAULT_CONTENT.lines)
-
-  if (pack !== undefined) {
-    layContent(pack, roster, lines, 'the pack', warnings)
-  }
 
   if (raw !== undefined) {
     layContent(raw, roster, lines, '', warnings)

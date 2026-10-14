@@ -1,7 +1,7 @@
 // A turn plays as acts, so a short turn still tells a whole little story and
 // a long one builds up to the full loop:
 //
-//   0 prelude    Pinch on its own, getting ready: practice, loading up.
+//   0 prelude    Clawd on its own, getting ready: practice, loading up.
 //   1 incident   Something happens: a scout, a stray rival, a noise.
 //   2 fight      The fight is on, without bosses or swarms yet.
 //   3 set piece  Something big: a boss, a swarm, a powerup.

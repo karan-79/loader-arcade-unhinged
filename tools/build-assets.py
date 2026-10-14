@@ -55,7 +55,7 @@ def save(im, path):
     im.save(path, optimize=True)
 
 
-# Pinch and the vehicles, straight from their pixels.
+# Clawd and the vehicles, straight from their pixels.
 
 def build_hero(sprites):
     poses, palette = sprites['hero']['poses'], sprites['hero']['palette']
@@ -72,8 +72,8 @@ def build_hero(sprites):
 
     bazooka = [list(row) for row in poses['idle']]
     for x in range(16):
-        bazooka[2][x] = 'z' if 1 < x < 14 else 'Z'
-        bazooka[3][x] = 'Z' if x in (0, 15) else 'z'
+        bazooka[0][x] = 'z' if 1 < x < 14 else 'Z'
+        bazooka[1][x] = 'Z' if x in (0, 15) else 'z'
     save(from_pixels([''.join(row) for row in bazooka], {**palette, 'z': 0x4A5530, 'Z': 0x2E2E2E}), f'{OUT}/hero/bazooka.png')
 
 

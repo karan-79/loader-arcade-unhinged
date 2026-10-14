@@ -1,5 +1,5 @@
-// What Pinch's fights share: the arena's size, sparks and pop-up words, waves
-// that escalate into boss fights, powerup drops that fly to Pinch, the
+// What Clawd's fights share: the arena's size, sparks and pop-up words, waves
+// that escalate into boss fights, powerup drops that fly to Clawd, the
 // heads-up line, and drawing a rival running, hurt, knocked out or as a boss.
 
 import type { Canvas, Overlay } from './raster'
@@ -150,7 +150,7 @@ export const stepWaves = (waves: Waves, seconds: number) => {
   }
 }
 
-// Powerup drops: they pop out of a knocked-out rival, then fly to Pinch.
+// Powerup drops: they pop out of a knocked-out rival, then fly to Clawd.
 
 export type Drop<K extends string> = { kind: K; x: number; y: number; vx: number; vy: number; age: number }
 
@@ -158,7 +158,7 @@ export const dropFrom = <K extends string>(drops: Drop<K>[], kind: K, x: number,
   drops.push({ kind, x, y, vx: between(random, -8, 8), vy: -between(random, 14, 20), age: 0 })
 }
 
-// Moves the drops; returns the kinds that reached Pinch.
+// Moves the drops; returns the kinds that reached Clawd.
 export const stepDrops = <K extends string>(drops: Drop<K>[], seconds: number, toX: number, toY: number) => {
   const arrived: K[] = []
 

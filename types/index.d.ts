@@ -11,7 +11,7 @@ export type AnimStyle =
 
 declare module 'claude-code' {
   interface PluginState {
-    'loader-arcade': {
+    'loader-arcade-unhinged': {
       style: AnimStyle
       isPreviewing: boolean
       isOutro: boolean

@@ -1,5 +1,5 @@
-// What everyone says in Pinch's fights. The lines come from content (see
-// content.ts): Pinch's quips, rivals' trash talk, and boss monologues that
+// What everyone says in Clawd's fights. The lines come from content (see
+// content.ts): Clawd's quips, rivals' trash talk, and boss monologues that
 // sometimes run long enough to earn a bazooka.
 
 import type { Lines } from './content'

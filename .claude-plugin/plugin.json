@@ -1,7 +1,7 @@
 {
-  "name": "loader-arcade",
-  "version": "0.1.0",
-  "description": "Unhinged edition: a tiny pixel arcade above the prompt while Claude Code works, where a parody crab takes on parodies of AI companies and coding agents. Fights and chill scenes, each turn a little story. Unofficial parody; not affiliated with any company it mocks.",
+  "name": "loader-arcade-unhinged",
+  "version": "0.2.0",
+  "description": "A tiny pixel arcade above the prompt while Claude Code works, where Clawd takes on AI companies and coding agents, logos and all. Fights and chill scenes, each turn a little story. Unofficial parody; not affiliated with any company it mocks.",
   "author": { "name": "Karandeep" },
   "license": "MIT",
   "keywords": ["mod", "animation", "spinner", "pixel-art", "fun", "parody"],

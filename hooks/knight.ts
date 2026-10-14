@@ -1,12 +1,12 @@
 // knight: one-on-one duels. Each rival walks in, they trade blows,
-// parrying with sparks, and after five to ten seconds Pinch dashes through it
-// in one cut: a beat of stillness, then the rival falls apart in two. Pinch
+// parrying with sparks, and after five to ten seconds Clawd dashes through it
+// in one cut: a beat of stillness, then the rival falls apart in two. Clawd
 // brings a different weapon to each duel (sword, axe, spear, hammer, twin
 // daggers, or a staff that casts fireballs). Every fourth duel is a boss: a
-// short exchange, then Pinch powers up and ends it with an ultimate, a giant
+// short exchange, then Clawd powers up and ends it with an ultimate, a giant
 // fireball or a holy blade, and carries a flaming weapon for a few duels.
 //
-// A turn builds up in acts (see acts.ts): Pinch starts alone, practising on a
+// A turn builds up in acts (see acts.ts): Clawd starts alone, practising on a
 // straw dummy, sharpening its blade, picking a weapon off a rack, twirling or
 // saluting; then something happens (a scout peeks in, an arrow lands, a noise,
 // or a rival drops in for a quick duel); then the duels are on, with rivals
@@ -308,7 +308,7 @@ const flee = (knight: Knight, foe: Foe, random: () => number) => {
   enter(knight, 'calm')
 }
 
-// Pinch's weapon hand, by pose.
+// Clawd's weapon hand, by pose.
 const heroHand = (knight: Knight, pose: Pose) => {
   const x = Math.round(knight.x)
 
@@ -524,7 +524,7 @@ const takeFromRack = (knight: Knight, random: () => number) => {
   burst(knight.sparks, knight.x + BODY_WIDTH, HERO_TOP + 2, 6, STEEL_SPARKS, random, 12)
 }
 
-// Pinch stops what it was practising and turns to the trouble.
+// Clawd stops what it was practising and turns to the trouble.
 const stopPractice = (knight: Knight, random: () => number) => {
   takeFromRack(knight, random)
   knight.isPracticing = false
@@ -532,7 +532,7 @@ const stopPractice = (knight: Knight, random: () => number) => {
   knight.facing = 1
 }
 
-// The prelude: Pinch alone, busy, `knight.phaseSeconds` into the turn.
+// The prelude: Clawd alone, busy, `knight.phaseSeconds` into the turn.
 const practise = (knight: Knight, seconds: number, random: () => number) => {
   const t = knight.phaseSeconds
   const hand = heroHand(knight, 'idle')
@@ -649,7 +649,7 @@ const startIncident = (knight: Knight, columns: number, random: () => number) =>
       enter(knight, 'enter')
       break
     case 'arrow': {
-      // Lobbed from off the right edge to land just in front of Pinch, or in the dummy.
+      // Lobbed from off the right edge to land just in front of Clawd, or in the dummy.
       const target = knight.dummy === null ? { x: knight.x + BODY_WIDTH + 4, y: GROUND - 1 } : { x: knight.dummy.x + 2, y: GROUND - 5 }
       const flight = 0.6
       const top = 3
@@ -780,7 +780,7 @@ const startAct = (knight: Knight, act: Act, columns: number, random: () => numbe
 }
 
 // A new turn: the session's duels, KOs and flaming weapon carry over; the
-// field is cleared and Pinch starts on its own with a prelude.
+// field is cleared and Clawd starts on its own with a prelude.
 export const beginKnightTurn = (knight: Knight, columns: number, random: () => number = Math.random) => {
   const home = homeOf(columns)
   const prelude = pickFresh(PRELUDES, knight.lastPrelude, random)
@@ -822,7 +822,7 @@ export const beginKnightTurn = (knight: Knight, columns: number, random: () => n
 }
 
 // The turn is over: a rival mid-duel gets the finishing cut, one still on its
-// way (or a boss) runs for it, and Pinch signs off.
+// way (or a boss) runs for it, and Clawd signs off.
 export const endKnightTurn = (knight: Knight, columns: number, random: () => number = Math.random) => {
   const foe = knight.foe
 
@@ -944,7 +944,7 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
         enter(knight, 'duel')
         popWord(knight.pops, `${WEAPONS[knight.weapon].name}!`, home + BODY_WIDTH / 2)
 
-        // The rival opens its mouth; Pinch answers with its weapon.
+        // The rival opens its mouth; Clawd answers with its weapon.
         const opener = foe.isBoss
           ? named(pick(BOSS_LINES.intro, random), rivalAt(foe.rival).label)
           : random() < 0.5
@@ -995,7 +995,7 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
         }
       }
 
-      // A boss gets a short exchange, then Pinch powers up and ends it.
+      // A boss gets a short exchange, then Clawd powers up and ends it.
       if (foe.isBoss && knight.phaseSeconds >= BOSS_POWERUP_AT && knight.swing === null) {
         knight.ultimate = pickFrom(ULTIMATES, random)
         burst(knight.sparks, knight.x + BODY_WIDTH / 2, HERO_TOP + 4, 24, GOLD_SPARKS, random, 24)
@@ -1071,7 +1071,7 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
       knight.x = Math.max(home, knight.x - WALK_SPEED * 2 * seconds)
       knight.stride += seconds * 10
 
-      // Before the fight is on, or once the turn is over, Pinch waits.
+      // Before the fight is on, or once the turn is over, Clawd waits.
       if (knight.x === home) {
         knight.facing = 1
         enter(knight, knight.act < 2 || knight.isOutro ? 'calm' : 'enter')
@@ -1108,7 +1108,7 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
   stepTalk(knight.chat, seconds)
 }
 
-// Where each line is said: over Pinch or over the rival.
+// Where each line is said: over Clawd or over the rival.
 const speechOf = (knight: Knight): Speech[] =>
   knight.chat.bubbles.flatMap(bubble => {
     if (bubble.who === 'hero') {
@@ -1314,7 +1314,7 @@ export const knightCells = (knight: Knight, columns: number, rows: number, withA
 
   drawProps(canvas, knight)
 
-  // A scout faces Pinch on the way in, and away on the way out.
+  // A scout faces Clawd on the way in, and away on the way out.
   if (scout !== null && drawsRival(scout.rival)) {
     const sprite = spriteOf(scout.rival)
     const rows = [...sprite, legsOf(sprite[0]?.length ?? 7, scout.stride)]
@@ -1378,7 +1378,7 @@ export const knightCells = (knight: Knight, columns: number, rows: number, withA
     drawHero(canvas, pose, knight.facing, heroX, GROUND, { flash: knight.hurt > 0.15 ? 1 : 0 })
   }
 
-  // Pinch's weapon: raised in a power-up, grown for the holy blade.
+  // Clawd's weapon: raised in a power-up, grown for the holy blade.
   const hand = heroHand({ ...knight, x: heroX }, pose)
   const isFinishing = knight.phase === 'finisher' || knight.phase === 'freeze'
   const isRaised = knight.phase === 'split' || knight.phase === 'powerup' || knight.phase === 'ultimate'
@@ -1397,7 +1397,7 @@ export const knightCells = (knight: Knight, columns: number, rows: number, withA
     drawWeapon(canvas, { x: heroX, y: HERO_TOP + 4 }, 0.6, knight.facing, 'daggers', lookOf(knight), knight.seconds)
   }
 
-  // The inferno gathers over Pinch's raised hand before it is thrown.
+  // The inferno gathers over Clawd's raised hand before it is thrown.
   if (knight.phase === 'ultimate' && knight.ultimate === 'inferno' && knight.phaseSeconds < CHARGE_SECONDS) {
     const top = heroHand({ ...knight, x: heroX }, 'lift')
     drawFireball(canvas, { x: top.x, y: top.y - 3, vx: 0, size: 1 + 3 * (knight.phaseSeconds / CHARGE_SECONDS), isUltimate: true })
@@ -1422,7 +1422,7 @@ export const knightCells = (knight: Knight, columns: number, rows: number, withA
   return packCanvas(canvas, hudOverlays(hud, knight.pops, columns, speechOf(knight)))
 }
 
-// The -img style's pictures: Pinch, the rival (or its halves, as it falls).
+// The -img style's pictures: Clawd, the rival (or its halves, as it falls).
 export const knightActors = (knight: Knight): Actor[] => {
   const actors: Actor[] = []
   const foe = knight.foe
