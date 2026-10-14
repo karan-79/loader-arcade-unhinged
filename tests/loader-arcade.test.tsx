@@ -11,6 +11,7 @@ import { createKnight, knightCells, stepKnight } from '../hooks/knight'
 import { createShooter, shooterCells, stepShooter } from '../hooks/shooter'
 import { applyContent } from '../hooks/content'
 import { HERO_LINES, SCENES, bazookaTalk, bossTalk } from '../hooks/banter'
+import { hudOverlays } from '../hooks/arena'
 import { DEFAULT_ROSTER, pickRival, rivals } from '../hooks/rivals'
 
 const band = (isWorking: boolean) => ({
@@ -255,4 +256,23 @@ test('boss exchanges come whole, picked at random, with the name filled in', () 
   expect(bossTalk('X', Math.random)).toEqual({ intro: 'X!', brag: 'Hi.', reply: 'Bye.' })
   expect(notes.some(note => note.includes('lines.scenes.bazooka'))).toBe(true)
   applyContent(undefined)
+})
+
+test('in the picture styles, speech steers clear of pictures on the top row', () => {
+  const boss = { left: 60, right: 68 }
+  const speech = [
+    { text: '...did I mention my GPUs?', x: 64, color: 0xffffff },
+    { text: 'meh.', x: 10, color: 0xffffff },
+  ]
+  const lines = hudOverlays({ left: 'W1 KO 0' }, [], 100, speech, [boss]).filter(line => line.text.startsWith('"'))
+
+  expect(lines.length).toBe(2)
+  for (const line of lines) {
+    const end = line.column + line.text.length - 1
+    expect(end < boss.left || line.column > boss.right).toBe(true)
+    expect(line.column >= 0 && end < 100).toBe(true)
+  }
+  // Without pictures, a line sits centred over its speaker as before.
+  const plain = hudOverlays({ left: '' }, [], 100, speech).find(line => line.text.includes('GPUs'))!
+  expect(Math.abs(plain.column + plain.text.length / 2 - 64)).toBeLessThan(1)
 })

@@ -35,6 +35,7 @@ import {
   foeSpeed,
   hpBar,
   hudOverlays,
+  topRowSpans,
   pickFrom,
   popWord,
   rivalVoice,
@@ -1160,7 +1161,8 @@ export const dojoCells = (dojo: Dojo, columns: number, rows: number, withActors 
     right: boss === null || boss.ko !== null ? undefined : `${rivalAt(boss.rival).label} ${hpBar(boss.hp, boss.maxHp)}`,
   }
 
-  return packCanvas(canvas, hudOverlays(hud, dojo.pops, columns, speechOf(dojo)))
+  const blocked = withActors ? [] : topRowSpans(dojoActors(dojo))
+  return packCanvas(canvas, hudOverlays(hud, dojo.pops, columns, speechOf(dojo), blocked))
 }
 
 // The -img style's pictures: rivals (facing the way they came), the one being

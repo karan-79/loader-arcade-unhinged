@@ -32,6 +32,7 @@ import {
   foeSpeed,
   hpBar,
   hudOverlays,
+  topRowSpans,
   pickFrom,
   popWord,
   rivalVoice,
@@ -1664,7 +1665,8 @@ export const shooterCells = (shooter: Shooter, columns: number, rows: number, wi
     right: boss === null || boss.ko !== null ? undefined : `${rivalAt(boss.rival).label} ${hpBar(boss.hp, boss.maxHp)}`,
   }
 
-  return packCanvas(canvas, hudOverlays(hud, shooter.pops, columns, speechOf(shooter, columns)))
+  const blocked = withActors ? [] : topRowSpans(shooterActors(shooter, columns))
+  return packCanvas(canvas, hudOverlays(hud, shooter.pops, columns, speechOf(shooter, columns), blocked))
 }
 
 // Where each line is said: over Clawd (or its ride), the boss, or a rival.

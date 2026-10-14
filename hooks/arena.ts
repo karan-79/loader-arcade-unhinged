@@ -317,9 +317,39 @@ export const BOSS_VOICE = 0xff7b72
 // A rival speaks in its logo's colour, lifted a little so it reads.
 export const rivalVoice = (rival: number) => mix(Object.values(rivalAt(rival).palette)[0] ?? 0xffffff, 0xffffff, 0.25)
 
-// Each line centred over its speaker, then nudged right so no two touch.
-const speechOverlays = (speech: readonly Speech[], columns: number): Overlay[] => {
-  const placed = speech
+// Columns of the top row, first to last.
+export type Span = { left: number; right: number }
+
+// The top-row columns the pictures cover, in the picture styles: words
+// written there would not show, so speech keeps clear of them.
+export const topRowSpans = (actors: readonly { left: number; top: number; columns: number }[]): Span[] =>
+  actors.filter(actor => actor.top < 1).map(actor => ({ left: actor.left, right: actor.left + actor.columns - 1 }))
+
+// Where `width` columns of words go on the top row: never over another line
+// (`lines`), then over as little picture (`blocked`) as the row allows, then
+// as near `want` as can be.
+const freeColumn = (want: number, width: number, columns: number, blocked: readonly Span[], lines: readonly Span[] = []) => {
+  const covered = (column: number, spans: readonly Span[]) =>
+    spans.reduce((sum, span) => sum + Math.max(0, Math.min(column + width - 1, span.right) - Math.max(column, span.left) + 1), 0)
+
+  let best = clamp(want, 0, Math.max(0, columns - width))
+  let bestCost = Infinity
+  for (let column = 0; column <= Math.max(0, columns - width); column++) {
+    const cost = covered(column, lines) * 10000 + covered(column, blocked) * 100 + Math.abs(column - want)
+    if (cost < bestCost) {
+      best = column
+      bestCost = cost
+    }
+  }
+
+  return best
+}
+
+// Each line centred over its speaker, then moved as little as it takes to
+// touch no other line and no picture.
+const speechOverlays = (speech: readonly Speech[], columns: number, blocked: readonly Span[]): Overlay[] => {
+  const placed: Overlay[] = []
+  const lines = speech
     .map(({ text, x, color }) => {
       const quoted = `"${text}"`
 
@@ -327,10 +357,10 @@ const speechOverlays = (speech: readonly Speech[], columns: number): Overlay[] =
     })
     .sort((a, b) => a.column - b.column)
 
-  let end = -2
-  for (const line of placed) {
-    line.column = clamp(Math.max(line.column, end + 2), 0, Math.max(0, columns - line.text.length))
-    end = line.column + line.text.length - 1
+  for (const line of lines) {
+    const others = placed.map(other => ({ left: other.column - 1, right: other.column + other.text.length }))
+    line.column = freeColumn(line.column, line.text.length, columns, blocked, others)
+    placed.push(line)
   }
 
   return placed
@@ -339,14 +369,18 @@ const speechOverlays = (speech: readonly Speech[], columns: number): Overlay[] =
 const overlaps = (a: Overlay, b: Overlay) =>
   a.row === b.row && a.column < b.column + b.text.length + 1 && b.column < a.column + a.text.length + 1
 
-export const hudOverlays = (hud: Hud, pops: readonly Pop[], columns: number, speech: readonly Speech[] = []): Overlay[] => {
-  const said = speechOverlays(speech, columns)
+// `blocked`: the top-row spans pictures cover (topRowSpans), none in blocks.
+export const hudOverlays = (hud: Hud, pops: readonly Pop[], columns: number, speech: readonly Speech[] = [], blocked: readonly Span[] = []): Overlay[] => {
+  const said = speechOverlays(speech, columns, blocked)
+  // The score at the left, the boss's name and health at the right, each
+  // moved off any picture in the way.
+  const at = (want: number, text: string) => freeColumn(want, text.length, columns, blocked)
   const rest = [
-    { column: 1, row: 0, text: hud.left, color: HUD_COLOR },
+    { column: at(1, hud.left), row: 0, text: hud.left, color: HUD_COLOR },
     ...(hud.right === undefined
       ? []
-      : [{ column: Math.max(0, columns - hud.right.length - 1), row: 0, text: hud.right, color: BOSS_COLOR }]),
-    ...popOverlays(pops, columns),
+      : [{ column: at(Math.max(0, columns - hud.right.length - 1), hud.right), row: 0, text: hud.right, color: BOSS_COLOR }]),
+    ...popOverlays(pops, columns).filter(pop => blocked.every(span => pop.column > span.right || pop.column + pop.text.length - 1 < span.left)),
   ]
 
   // What is said wins the line; the score and pop-ups it would cover step aside.

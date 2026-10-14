@@ -31,6 +31,7 @@ import {
   drawSparks,
   hpBar,
   hudOverlays,
+  topRowSpans,
   pickFrom,
   popWord,
   rivalVoice,
@@ -1421,7 +1422,8 @@ export const knightCells = (knight: Knight, columns: number, rows: number, withA
     .join('  ')
   const hud = { left, right: foe === null ? undefined : `${rivalAt(foe.rival).label} ${hpBar(foe.hp, foe.maxHp, Math.min(8, foe.maxHp))}` }
 
-  return packCanvas(canvas, hudOverlays(hud, knight.pops, columns, speechOf(knight)))
+  const blocked = withActors ? [] : topRowSpans(knightActors(knight))
+  return packCanvas(canvas, hudOverlays(hud, knight.pops, columns, speechOf(knight), blocked))
 }
 
 // The -img style's pictures: Clawd, the rival (or its halves, as it falls).
