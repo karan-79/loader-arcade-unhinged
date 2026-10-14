@@ -6,7 +6,7 @@
 import type { Act } from './acts'
 import { HERO_PALETTE } from './hero'
 import type { Fine } from './fine'
-import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect } from './fine'
+import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect, snapX, snapY } from './fine'
 import { clamp, mix, noise } from './raster'
 
 // Sitting, eyes shut, arms folded in, legs tucked out to the sides.
@@ -166,8 +166,9 @@ const drawGarden = (fine: Fine, scene: Meditation) => {
       const dx = (x - center) / 30
       const dy = (y - (fine.height - 3)) / 6
       const ring = Math.sqrt(dx * dx + dy * dy)
-      const rake = ring < 1.6 ? Math.sin(ring * 9) : Math.sin(y * 1.6 + Math.sin(x * 0.05) * 0.8)
-      dot(fine, x, y, rake > 0.6 ? groove : noise(x, y) > 0.93 ? mix(sand, 0xffffff, 0.15) : sand)
+      // In text the grooves are too fine to show; the sand stays smooth.
+      const rake = fine.forText ? 0 : ring < 1.6 ? Math.sin(ring * 9) : Math.sin(y * 1.6 + Math.sin(x * 0.05) * 0.8)
+      dot(fine, x, y, rake > 0.6 ? groove : !fine.forText && noise(x, y) > 0.93 ? mix(sand, 0xffffff, 0.15) : sand)
     }
   }
 
@@ -276,23 +277,25 @@ const drawMeditation = (fine: Fine, scene: Meditation) => {
   // Clawd, breathing and, later, floating.
   const breath = scene.act >= 1 && Math.sin((scene.seconds / BREATH_SECONDS) * Math.PI * 2) > 0 ? 1 : 0
   const sprite = scene.act === 0 && scene.seconds < 0.6 ? EYES_OPEN : SITTING
+  // In text, full block size on the cell grid, so he stays crisp.
+  const unit = fine.forText ? SCALE : UNIT
   const lift = Math.round(liftOf(scene) * 6)
-  const left = Math.round(center - (SIT_WIDTH * UNIT) / 2)
-  const top = fine.height - 5 - sprite.length * UNIT - lift
+  const left = snapX(fine, Math.round(center - (SIT_WIDTH * unit) / 2))
+  const top = snapY(fine, fine.height - 5 - sprite.length * unit - lift)
   const rows = placed(sprite, 0, breath)
 
-  disc(fine, center, fine.height - 4, SIT_WIDTH * UNIT * 0.45 * (1 - lift / 12), 0x000000, 0.25, 0.12)
+  disc(fine, center, fine.height - 4, SIT_WIDTH * unit * 0.45 * (1 - lift / 12), 0x000000, 0.25, 0.12)
 
   const body = new Set<number>()
-  const box = { left, top: top - breath * UNIT, right: left + SIT_WIDTH * UNIT, bottom: top + (sprite.length + 1) * UNIT }
+  const box = { left, top: top - breath * unit, right: left + SIT_WIDTH * unit, bottom: top + (sprite.length + 1) * unit }
   for (const { row, y } of rows) {
     ;[...row].forEach((pixel, dx) => {
       if (pixel === '.') {
         return
       }
-      for (let py = 0; py < UNIT; py++) {
-        for (let px = 0; px < UNIT; px++) {
-          body.add((top + y * UNIT + py) * fine.width + left + dx * UNIT + px)
+      for (let py = 0; py < unit; py++) {
+        for (let px = 0; px < unit; px++) {
+          body.add((top + y * unit + py) * fine.width + left + dx * unit + px)
         }
       }
     })
@@ -306,7 +309,7 @@ const drawMeditation = (fine: Fine, scene: Meditation) => {
     ;[...row].forEach((pixel, dx) => {
       const color = HERO_PALETTE[pixel]
       if (color !== undefined) {
-        rect(fine, left + dx * UNIT, top + y * UNIT, UNIT, UNIT, color)
+        rect(fine, left + dx * unit, top + y * unit, unit, unit, color)
       }
     })
   }
@@ -330,7 +333,7 @@ const drawMeditation = (fine: Fine, scene: Meditation) => {
 }
 
 export const meditationCells = (scene: Meditation, columns: number, rows: number) => {
-  const fine = createFine(columns, rows)
+  const fine = createFine(columns, rows, true)
   drawMeditation(fine, scene)
   return fineCells(fine)
 }

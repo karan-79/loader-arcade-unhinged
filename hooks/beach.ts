@@ -4,7 +4,7 @@
 
 import type { Act } from './acts'
 import type { Fine } from './fine'
-import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect } from './fine'
+import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect, snapX } from './fine'
 import { BODY_WIDTH, EYE_COLUMNS, EYE_ROW, drawHeroFine } from './hero'
 import type { Overlay } from './raster'
 import { clamp, mix, noise } from './raster'
@@ -200,11 +200,13 @@ const drawSea = (fine: Fine, scene: Beach) => {
     for (let x = 0; x < fine.width; x++) {
       // Swells: short horizontal streaks of light and shadow, drifting.
       const wave = Math.sin(x * (0.09 + depth * 0.05) + noise(y, 1) * 40 - scene.seconds * (1.2 + depth))
-      let color = wave > 0.94 ? mix(base, FOAM, 0.35 + depth * 0.2) : wave < -0.9 ? mix(base, 0x000000, 0.12) : base
+      // Too fine for text, where only the swells' crests show.
+      const crest = fine.forText ? 0.985 : 0.94
+      let color = wave > crest ? mix(base, FOAM, 0.35 + depth * 0.2) : wave < -0.9 && !fine.forText ? mix(base, 0x000000, 0.12) : base
       // The sun's (or moon's) path on the water: dashes that shimmer.
       const spread = 4 + depth * 10
       const dash = Math.floor((x - glintX + 40) / 3)
-      if (Math.abs(x - glintX) < spread && noise(dash * 31 + y, step) > 0.45 + (Math.abs(x - glintX) / spread) * 0.5) {
+      if (!fine.forText && Math.abs(x - glintX) < spread && noise(dash * 31 + y, step) > 0.45 + (Math.abs(x - glintX) / spread) * 0.5) {
         color = mix(color, glint, 0.75)
       }
       dot(fine, x, y, color)
@@ -229,12 +231,12 @@ const drawSand = (fine: Fine, scene: Beach) => {
     for (let x = 0; x < fine.width; x++) {
       const grain = noise(x, y)
       const base = isWet ? mix(sand, 0x6b5233, 0.35) : sand
-      dot(fine, x, y, grain > 0.9 ? mix(base, 0xffffff, 0.18) : grain < 0.08 ? mix(base, 0x000000, 0.12) : base)
+      dot(fine, x, y, fine.forText ? base : grain > 0.9 ? mix(base, 0xffffff, 0.18) : grain < 0.08 ? mix(base, 0x000000, 0.12) : base)
     }
   }
 
-  // A few shells and pebbles.
-  for (let x = 0; x < fine.width; x += 7) {
+  // A few shells and pebbles, too small to show in text.
+  for (let x = 0; x < (fine.forText ? 0 : fine.width); x += 7) {
     if (noise(x, 91) > 0.82) {
       const y = SAND_LINE + 5 + noise(x, 92) * (fine.height - SAND_LINE - 7)
       dot(fine, x, y, noise(x, 93) > 0.5 ? 0xf2c4c4 : 0x9a8f80)
@@ -390,22 +392,27 @@ const drawBeach = (fine: Fine, scene: Beach, columns: number) => {
   const isWalking = (scene.act === 2 && !isBuilding) || (scene.act >= 3 && scene.x > loungeX(columns))
   const pose = isBuilding ? (Math.floor(scene.seconds * 4) % 2 === 0 ? 'punch' : 'idle') : isWalking && Math.floor(scene.seconds * 8) % 2 === 0 ? 'stride' : 'idle'
   const facing = scene.act >= 3 && scene.x > loungeX(columns) ? -1 : 1
-  const lift = scene.act === 3 && swashOf(scene) > 0.5 ? 2 : 0
-  // Half his block size, so he walks up to the castle's edge rather than
-  // stopping where his full-size self would have.
+  // Smaller than his block size in a picture, so he walks up to the castle's
+  // edge rather than stopping where his full-size self would have; in text,
+  // full size and on the cell grid, so he stays crisp.
+  const unit = fine.forText ? SCALE : UNIT
+  const lift = scene.act === 3 && swashOf(scene) > 0.5 ? (fine.forText ? SCALE : 2) : 0
   const lounge = loungeX(columns)
   const build = castleX(columns) - 13
   const toCastle = clamp((scene.x - lounge) / Math.max(1, build - lounge), 0, 1)
-  const x = (scene.x + 1 + toCastle * (BODY_WIDTH - (BODY_WIDTH * UNIT) / SCALE)) * SCALE
-  disc(fine, x + 6 * UNIT, ground - 2, 7 * UNIT, 0x000000, 0.18, 0.15)
-  const top = drawHeroFine(fine, pose, facing, x, ground - 2, lift, UNIT)
+  const x = snapX(fine, (scene.x + 1 + toCastle * (BODY_WIDTH - (BODY_WIDTH * unit) / SCALE)) * SCALE)
+  const feet = fine.forText ? ground : ground - 2
+  disc(fine, x + 6 * unit, feet, 7 * unit, 0x000000, 0.18, 0.15)
+  const top = drawHeroFine(fine, pose, facing, x, feet, lift, unit)
 
   if (scene.act <= 1 || (scene.act >= 4 && scene.x <= loungeX(columns))) {
-    const eyes = top + EYE_ROW * UNIT
+    const eyes = top + EYE_ROW * unit
     const [first, second] = EYE_COLUMNS
-    rect(fine, x + (first - 1) * UNIT, eyes, (second - first + 3) * UNIT, UNIT * 1.5, SHADES)
-    dot(fine, x + (first - 1) * UNIT + 1, eyes, 0xffffff, 0.8)
-    dot(fine, x + (second - 1) * UNIT + 1, eyes, 0xffffff, 0.8)
+    rect(fine, x + (first - 1) * unit, eyes, (second - first + 3) * unit, fine.forText ? unit : unit * 1.5, SHADES)
+    if (!fine.forText) {
+      dot(fine, x + (first - 1) * unit + 1, eyes, 0xffffff, 0.8)
+      dot(fine, x + (second - 1) * unit + 1, eyes, 0xffffff, 0.8)
+    }
   }
 
   drawGull(fine, scene)
@@ -421,7 +428,7 @@ const drawBeach = (fine: Fine, scene: Beach, columns: number) => {
 }
 
 export const beachCells = (scene: Beach, columns: number, rows: number) => {
-  const fine = createFine(columns, rows)
+  const fine = createFine(columns, rows, true)
   return fineCells(fine, drawBeach(fine, scene, columns))
 }
 

@@ -1,10 +1,10 @@
 // The chill scenes' canvas: SCALE times finer than the block canvas, with
 // alpha. Where the terminal shows pictures (kitty, Ghostty) it is sent whole
-// as an RGBA image; elsewhere each block pixel is the average of the fine
-// pixels under it, so the same drawing works in plain cells too.
+// as an RGBA image. Elsewhere it is drawn in quadrant blocks: each cell split
+// 2x2, its four quarters fitted to the two colours that suit them best.
 
 import type { Overlay } from './raster'
-import { EMPTY, createCanvas, mix, packCanvas, plot, toBase64 } from './raster'
+import { EMPTY, TERMINAL_DEFAULT, mix, toBase64 } from './raster'
 
 // Fine pixels per block pixel, each way: a cell is SCALE wide, 2 * SCALE tall.
 export const SCALE = 4
@@ -14,14 +14,25 @@ export type Fine = {
   height: number
   colors: Int32Array
   alpha: Float32Array
+  // Bound for quadrant cells rather than a picture: characters are drawn at
+  // block size, snapped to the cells, so they stay crisp.
+  forText: boolean
 }
 
-export const createFine = (columns: number, rows: number): Fine => {
+export const createFine = (columns: number, rows: number, forText = false): Fine => {
   const width = columns * SCALE
   const height = rows * 2 * SCALE
 
-  return { width, height, colors: new Int32Array(width * height).fill(EMPTY), alpha: new Float32Array(width * height) }
+  return { width, height, colors: new Int32Array(width * height).fill(EMPTY), alpha: new Float32Array(width * height), forText }
 }
+
+// A quadrant's size in fine pixels: half a cell each way.
+const QUARTER_WIDTH = SCALE / 2
+const QUARTER_HEIGHT = SCALE
+
+// Snaps a fine position to the quadrant grid when drawing for text.
+export const snapX = (fine: Fine, x: number) => (fine.forText ? Math.round(x / QUARTER_WIDTH) * QUARTER_WIDTH : x)
+export const snapY = (fine: Fine, y: number) => (fine.forText ? Math.round(y / QUARTER_HEIGHT) * QUARTER_HEIGHT : y)
 
 // Lays `color` over the pixel at `amount` opacity (1 replaces it).
 export const dot = (fine: Fine, x: number, y: number, color: number, amount = 1) => {
@@ -167,38 +178,120 @@ export const finePicture = (fine: Fine, overlays: readonly Overlay[] = []) => {
   return { rgba: toBase64(bytes), width: fine.width, height: fine.height }
 }
 
-// The block cells: each block pixel the average of the fine ones under it,
-// faint ones drawn as shade glyphs, the words as text.
-export const fineCells = (fine: Fine, overlays: readonly Overlay[] = []) => {
-  const columns = fine.width / SCALE
-  const canvas = createCanvas(columns, fine.height / SCALE / 2)
+// Quadrant glyphs by which quarters are drawn in the foreground colour:
+// 1 top left, 2 top right, 4 bottom left, 8 bottom right.
+const QUADRANTS = [
+  0x20, 0x2598, 0x259d, 0x2580, 0x2596, 0x258c, 0x259e, 0x259b, 0x2597, 0x259a, 0x2590, 0x259c, 0x2584, 0x2599, 0x259f, 0x2588,
+]
 
-  for (let y = 0; y < canvas.pixelRows; y++) {
-    for (let x = 0; x < columns; x++) {
-      let r = 0
-      let g = 0
-      let b = 0
-      let weight = 0
+// The average colour of one quarter of a cell, or EMPTY where little is drawn.
+const quarterColor = (fine: Fine, left: number, top: number) => {
+  let r = 0
+  let g = 0
+  let b = 0
+  let weight = 0
 
-      for (let dy = 0; dy < SCALE; dy++) {
-        for (let dx = 0; dx < SCALE; dx++) {
-          const at = (y * SCALE + dy) * fine.width + x * SCALE + dx
-          const color = fine.colors[at]!
-          const alpha = color === EMPTY ? 0 : fine.alpha[at]!
-          r += ((color >> 16) & 0xff) * alpha
-          g += ((color >> 8) & 0xff) * alpha
-          b += (color & 0xff) * alpha
-          weight += alpha
-        }
-      }
-
-      const coverage = weight / (SCALE * SCALE)
-      if (coverage >= 0.3) {
-        const color = (Math.round(r / weight) << 16) | (Math.round(g / weight) << 8) | Math.round(b / weight)
-        plot(canvas, x, y, color, coverage < 0.6)
-      }
+  for (let dy = 0; dy < QUARTER_HEIGHT; dy++) {
+    for (let dx = 0; dx < QUARTER_WIDTH; dx++) {
+      const at = (top + dy) * fine.width + left + dx
+      const color = fine.colors[at]!
+      const alpha = color === EMPTY ? 0 : fine.alpha[at]!
+      r += ((color >> 16) & 0xff) * alpha
+      g += ((color >> 8) & 0xff) * alpha
+      b += (color & 0xff) * alpha
+      weight += alpha
     }
   }
 
-  return packCanvas(canvas, overlays)
+  if (weight < QUARTER_WIDTH * QUARTER_HEIGHT * 0.35) {
+    return EMPTY
+  }
+
+  return (Math.round(r / weight) << 16) | (Math.round(g / weight) << 8) | Math.round(b / weight)
+}
+
+const channels = (color: number) => [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff] as const
+
+const average = (colors: readonly number[]) => {
+  let r = 0
+  let g = 0
+  let b = 0
+  for (const color of colors) {
+    const [cr, cg, cb] = channels(color)
+    r += cr
+    g += cg
+    b += cb
+  }
+  return (Math.round(r / colors.length) << 16) | (Math.round(g / colors.length) << 8) | Math.round(b / colors.length)
+}
+
+const distance = (a: number, b: number) => {
+  const [ar, ag, ab] = channels(a)
+  const [br, bg, bb] = channels(b)
+  return (ar - br) ** 2 + (ag - bg) ** 2 + (ab - bb) ** 2
+}
+
+// A cell's glyph and colours: its four quarters split into the two groups
+// that keep each nearest its group's colour.
+const fitCell = (quarters: readonly number[]): [number, number, number] => {
+  const drawn = quarters.filter(color => color !== EMPTY)
+  if (drawn.length === 0) {
+    return [0x20, TERMINAL_DEFAULT, TERMINAL_DEFAULT]
+  }
+
+  // Empty quarters show the terminal behind; the rest share one colour.
+  if (drawn.length < 4) {
+    const mask = quarters.reduce((bits, color, index) => (color === EMPTY ? bits : bits | (1 << index)), 0)
+    return [QUADRANTS[mask]!, average(drawn), TERMINAL_DEFAULT]
+  }
+
+  let best: [number, number, number] = [QUADRANTS[15]!, average(quarters), TERMINAL_DEFAULT]
+  let bestError = quarters.reduce((error, color) => error + distance(color, best[1]), 0)
+
+  for (let mask = 1; mask < 15; mask++) {
+    const front = quarters.filter((_, index) => (mask >> index) & 1)
+    const back = quarters.filter((_, index) => !((mask >> index) & 1))
+    const fg = average(front)
+    const bg = average(back)
+    const error =
+      front.reduce((sum, color) => sum + distance(color, fg), 0) + back.reduce((sum, color) => sum + distance(color, bg), 0)
+    if (error < bestError - 1) {
+      best = [QUADRANTS[mask]!, fg, bg]
+      bestError = error
+    }
+  }
+
+  return best
+}
+
+// The cells: quadrant blocks fitted to the fine pixels, the words as text.
+export const fineCells = (fine: Fine, overlays: readonly Overlay[] = []) => {
+  const columns = fine.width / SCALE
+  const rows = fine.height / SCALE / 2
+  const words = new Uint32Array(columns * rows * 3)
+
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const left = column * SCALE
+      const top = row * 2 * SCALE
+      const quarters = [
+        quarterColor(fine, left, top),
+        quarterColor(fine, left + QUARTER_WIDTH, top),
+        quarterColor(fine, left, top + QUARTER_HEIGHT),
+        quarterColor(fine, left + QUARTER_WIDTH, top + QUARTER_HEIGHT),
+      ]
+      words.set(fitCell(quarters), (row * columns + column) * 3)
+    }
+  }
+
+  for (const { column, row, text, color } of overlays) {
+    ;[...text].forEach((character, offset) => {
+      const x = column + offset
+      if (x >= 0 && x < columns && row >= 0 && row < rows) {
+        words.set([character.codePointAt(0) ?? 0x20, color, TERMINAL_DEFAULT], (row * columns + x) * 3)
+      }
+    })
+  }
+
+  return toBase64(new Uint8Array(words.buffer))
 }

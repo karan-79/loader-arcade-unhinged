@@ -17,7 +17,8 @@ the Token Goblin and friends.
 | `fight`, `chill` | A different scene from the theme each turn. `fight` is the default. |
 
 In kitty and Ghostty the chill scenes are drawn as live pictures, four times
-finer than the block characters; other terminals get the same scenes in blocks.
+finer than the block characters. Other terminals (Konsole, GNOME Terminal,
+iTerm2 and the rest) get them in quadrant blocks, two colours to a cell.
 
 Every turn plays as a little story: Clawd gets ready, something happens, the
 fight is on, then a set piece, then everything. The pacing fits itself to how

@@ -5,16 +5,21 @@
 
 import type { Act } from './acts'
 import type { Fine } from './fine'
-import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect } from './fine'
+import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect, sprite } from './fine'
 import { clamp, mix, noise } from './raster'
 
 const PALETTE: Record<string, number> = {
   r: 0xd97757, // body
+  o: 0xd97757, // Clawd, at the wheel
   w: 0x9fd3e0, // glass
   k: 0x3a3a3a, // tyre
   h: 0xfff2a8, // headlight
   t: 0xff4d4d, // tail light
 }
+
+// The car in text: facing right, block pixels; the wheels alternate to roll.
+const CAR = ['...rrr..', '..rwwor.', 'trrrrrrh']
+const WHEELS = ['.kk..kk.', '.k...k..']
 
 const LANE = 0xd8d8d8
 const TRUNK = 0x6b4226
@@ -177,7 +182,30 @@ const drawLamp = (fine: Fine, x: number) => {
   rect(fine, x + 2, ROAD_TOP - 14, 3, 1, LAMP)
 }
 
+// The car in text, in block pixels on the cell grid so it stays crisp.
+const drawCarBlocks = (fine: Fine, scene: Cruise, columns: number) => {
+  const x = carX(columns) * SCALE
+  const bob = scene.speed > 1 && Math.floor(scene.seconds * 6) % 3 === 0 ? SCALE : 0
+  const wheels = scene.speed > 1 && Math.floor(scene.distance / 2) % 2 === 1 ? WHEELS[1]! : WHEELS[0]!
+  sprite(fine, CAR, PALETTE, x, fine.height - 4 * SCALE - bob)
+  sprite(fine, [wheels], PALETTE, x, fine.height - SCALE)
+
+  if (isNight(scene)) {
+    for (let dx = 1; dx <= 44; dx++) {
+      const spread = dx * 0.22
+      for (let dy = -spread * 0.4; dy <= spread; dy++) {
+        dot(fine, x + 32 + dx, fine.height - 6 - bob + dy, LAMP, 0.35 * (1 - dx / 45))
+      }
+    }
+  }
+}
+
 const drawCar = (fine: Fine, scene: Cruise, columns: number) => {
+  if (fine.forText) {
+    drawCarBlocks(fine, scene, columns)
+    return
+  }
+
   const x = carX(columns) * SCALE
   const bob = scene.speed > 1 && Math.floor(scene.seconds * 6) % 3 === 0 ? 1 : 0
   const base = fine.height - 4 - bob
@@ -240,7 +268,7 @@ const drawCruise = (fine: Fine, scene: Cruise, columns: number) => {
 
   // Rolling hills, nearer and faster.
   ridge(fine, scene, 0.18, ROAD_TOP - 2, at => 4 + 2.5 * Math.sin(at * 0.04) + 1.5 * Math.sin(at * 0.11 + 1),
-    (at, depth) => shaded(scene, depth < 1 ? 0x6fb04f : noise(Math.floor(at), Math.floor(depth)) > 0.85 ? 0x3f7a30 : GRASS))
+    (at, depth) => shaded(scene, depth < 1 ? 0x6fb04f : !fine.forText && noise(Math.floor(at), Math.floor(depth)) > 0.85 ? 0x3f7a30 : GRASS))
   rect(fine, 0, ROAD_TOP - 2, fine.width, 2, shaded(scene, 0x4a7f36))
 
   // Trees by day, street lamps by night, closer and faster.
@@ -264,7 +292,7 @@ const drawCruise = (fine: Fine, scene: Cruise, columns: number) => {
     const at = Math.floor(scrolled(scene, x, 1))
     dot(fine, x, ROAD_TOP, shaded(scene, 0xb8b8b0))
     for (let y = ROAD_TOP + 1; y < fine.height; y++) {
-      dot(fine, x, y, noise(at, y) > 0.9 ? mix(ASPHALT, 0x6a6a6a, 0.5) : ASPHALT)
+      dot(fine, x, y, !fine.forText && noise(at, y) > 0.9 ? mix(ASPHALT, 0x6a6a6a, 0.5) : ASPHALT)
     }
     if (Math.floor(at / 6) % 3 === 0) {
       dot(fine, x, LANE_ROW, shaded(scene, LANE))
@@ -280,7 +308,7 @@ const drawCruise = (fine: Fine, scene: Cruise, columns: number) => {
 }
 
 export const cruiseCells = (scene: Cruise, columns: number, rows: number) => {
-  const fine = createFine(columns, rows)
+  const fine = createFine(columns, rows, true)
   drawCruise(fine, scene, columns)
   return fineCells(fine)
 }
