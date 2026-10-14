@@ -39,7 +39,7 @@ import {
   stepRings,
   stepSparks,
 } from './arena'
-import { BOSS_LINES, HERO_LINES, RIVAL_LINES, named, pick, tauntFor } from './banter'
+import { BOSS_LINES, HERO_LINES, RIVAL_LINES, bossTalk, pick, tauntFor } from './banter'
 import type { Pose } from './hero'
 import { BODY_WIDTH, POSE_ROWS, drawHero } from './hero'
 import type { Canvas } from './raster'
@@ -520,7 +520,7 @@ const takeFromRack = (knight: Knight, random: () => number) => {
   rack.weapons = rack.weapons.filter(weapon => weapon !== knight.weapon)
   knight.facing = 1
   popWord(knight.pops, `${WEAPONS[knight.weapon].name}!`, knight.x + BODY_WIDTH / 2)
-  say(knight.chat, 'hero', HERO_LINES.weapon[knight.weapon], 1.2)
+  say(knight.chat, 'hero', pick(HERO_LINES.weapon[knight.weapon], random), 1.2)
   burst(knight.sparks, knight.x + BODY_WIDTH, HERO_TOP + 2, 6, STEEL_SPARKS, random, 12)
 }
 
@@ -944,14 +944,16 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
         enter(knight, 'duel')
         popWord(knight.pops, `${WEAPONS[knight.weapon].name}!`, home + BODY_WIDTH / 2)
 
-        // The rival opens its mouth; Clawd answers with its weapon.
-        const opener = foe.isBoss
-          ? named(pick(BOSS_LINES.intro, random), rivalAt(foe.rival).label)
-          : random() < 0.5
-            ? pick(RIVAL_LINES.duel, random)
-            : tauntFor(rivalAt(foe.rival).id, random)
-        say(knight.chat, 'foe', opener, 1.4)
-        later(knight.chat, 'hero', foe.isBoss ? pick(HERO_LINES.reply, random) : HERO_LINES.weapon[knight.weapon], 1.2, 1.4)
+        // The rival opens its mouth; Clawd answers with its weapon, or roasts
+        // a boss's brag.
+        if (foe.isBoss) {
+          const talk = bossTalk(rivalAt(foe.rival).label, random)
+          say(knight.chat, 'foe', talk.brag, 1.4)
+          later(knight.chat, 'hero', talk.reply, 1.2, 1.6)
+        } else {
+          say(knight.chat, 'foe', random() < 0.5 ? pick(RIVAL_LINES.duel, random) : tauntFor(rivalAt(foe.rival).id, random), 1.4)
+          later(knight.chat, 'hero', pick(HERO_LINES.weapon[knight.weapon], random), 1.2, 1.4)
+        }
       }
       break
     }
@@ -1019,7 +1021,7 @@ export const stepKnight = (knight: Knight, seconds: number, columns: number, ran
 
       if (knight.phaseSeconds >= POWERUP_SECONDS) {
         popWord(knight.pops, knight.ultimate === 'inferno' ? 'INFERNO...' : 'HOLY BLADE!', knight.x + BODY_WIDTH)
-        say(knight.chat, 'hero', HERO_LINES.ultimate[knight.ultimate ?? 'holy'], 1.6)
+        say(knight.chat, 'hero', pick(HERO_LINES.ultimate[knight.ultimate ?? 'holy'], random), 1.6)
         say(knight.chat, 'foe', pick(BOSS_LINES.scared, random), 1.2)
         enter(knight, 'ultimate')
       }

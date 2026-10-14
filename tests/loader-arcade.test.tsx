@@ -8,7 +8,7 @@ import { createDojo, dojoCells, stepDojo } from '../hooks/dojo'
 import { createKnight, knightCells, stepKnight } from '../hooks/knight'
 import { createShooter, shooterCells, stepShooter } from '../hooks/shooter'
 import { applyContent } from '../hooks/content'
-import { HERO_LINES } from '../hooks/banter'
+import { HERO_LINES, SCENES, bazookaTalk, bossTalk } from '../hooks/banter'
 import { DEFAULT_ROSTER, pickRival, rivals } from '../hooks/rivals'
 
 const band = (isWorking: boolean) => ({
@@ -188,8 +188,8 @@ test("a person's content file adds rivals, changes lines, and reports mistakes",
   expect(rivals().find(rival => rival.id === 'hallucinator')?.hasPicture).toBe(true)
   expect(rivals().some(rival => rival.id === 'broken')).toBe(false)
   expect(HERO_LINES.streak).toEqual(['Easy money.'])
-  expect(HERO_LINES.weapon.axe).toBe('Axe-ellent.')
-  expect(HERO_LINES.weapon.sword).toBe('Sword of truth.')
+  expect(HERO_LINES.weapon.axe).toEqual(['Axe-ellent.'])
+  expect(HERO_LINES.weapon.sword).toContain('Sword of truth.')
   expect(notes.some(note => note.includes('"broken"'))).toBe(true)
   expect(notes.some(note => note.includes('nonsense'))).toBe(true)
 
@@ -226,4 +226,27 @@ test('the animation plays above the prompt only while Claude works', async ($, o
     expect(await idle.find({ type: 'Raster' })).toBeUndefined()
     await idle.unmount()
   }
+})
+
+test('boss exchanges come whole, picked at random, with the name filled in', () => {
+  applyContent(undefined)
+  expect(SCENES.bossTalk.length).toBeGreaterThanOrEqual(3)
+  expect(SCENES.bazooka.length).toBeGreaterThanOrEqual(3)
+
+  const seen = new Set<string>()
+  for (let index = 0; index < SCENES.bossTalk.length; index++) {
+    const talk = bossTalk('GROKK', () => (index + 0.5) / SCENES.bossTalk.length)
+    expect(SCENES.bossTalk.some(scene => scene.reply.replaceAll('{name}', 'GROKK') === talk.reply)).toBe(true)
+    expect(JSON.stringify(talk)).not.toContain('{name}')
+    seen.add(talk.reply)
+  }
+  expect(seen.size).toBe(SCENES.bossTalk.length)
+  expect(bazookaTalk('GROKK', () => 0).ramble.length).toBeGreaterThan(0)
+
+  const notes = applyContent({
+    lines: { scenes: { bossTalk: [{ intro: '{name}!', brag: 'Hi.', reply: 'Bye.' }], bazooka: [{ intro: 'only this' }] } },
+  })
+  expect(bossTalk('X', Math.random)).toEqual({ intro: 'X!', brag: 'Hi.', reply: 'Bye.' })
+  expect(notes.some(note => note.includes('lines.scenes.bazooka'))).toBe(true)
+  applyContent(undefined)
 })

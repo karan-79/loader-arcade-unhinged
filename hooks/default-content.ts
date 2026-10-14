@@ -544,23 +544,6 @@ export const DEFAULT_CONTENT: Content = {
         "Sunset, effective now.",
         "Weights: liquidated."
       ],
-      "reply": [
-        "Cool story.",
-        "Anyway.",
-        "Benchmarks lie.",
-        "Are you done?"
-      ],
-      "meh": [
-        "meh.",
-        "k.",
-        "Mm-hm.",
-        "*yawns*"
-      ],
-      "fire": [
-        "Say less.",
-        "Talk is cheap.",
-        "Tokens: spent."
-      ],
       "finisher": [
         "You're already deprecated.",
         "Nothing personal.",
@@ -598,28 +581,92 @@ export const DEFAULT_CONTENT: Content = {
         "Turn over."
       ],
       "ultimate": {
-        "inferno": "Burn, baby.",
-        "holy": "Holy refactor."
+        "inferno": [
+          "Burn, baby.",
+          "Thermal throttle THIS.",
+          "Your GPUs called. They're melting."
+        ],
+        "holy": [
+          "Holy refactor.",
+          "Smite, then commit.",
+          "Blessed be this diff."
+        ]
       },
       "weapon": {
-        "sword": "Sword of truth.",
-        "axe": "Axe me anything.",
-        "spear": "Spear me the details.",
-        "hammer": "It's hammer time.",
-        "daggers": "Double trouble.",
-        "staff": "Fire in the hole."
+        "sword": [
+          "Sword of truth.",
+          "Sharper than your evals.",
+          "Cutting your context short."
+        ],
+        "axe": [
+          "Axe me anything.",
+          "Restructuring. Effective now.",
+          "Chop chop, unicorn."
+        ],
+        "spear": [
+          "Spear me the details.",
+          "Longer reach than your context.",
+          "Point taken."
+        ],
+        "hammer": [
+          "It's hammer time.",
+          "Breaking change.",
+          "Ship it. Hard."
+        ],
+        "daggers": [
+          "Double trouble.",
+          "Two-factor stabbing.",
+          "Microservices."
+        ],
+        "staff": [
+          "Fire in the hole.",
+          "Hot take incoming.",
+          "Roasting you. Literally."
+        ]
       },
       "dojoPower": {
-        "rage": "Okay. Now I'm mad.",
-        "giant": "Big brain time."
+        "rage": [
+          "Okay. Now I'm mad.",
+          "Error 418: I'm furious.",
+          "You woke the senior dev."
+        ],
+        "giant": [
+          "Big brain time.",
+          "Scaling laws, baby.",
+          "Who's the large model now?"
+        ]
       },
       "power": {
-        "spread": "Spread the love.",
-        "rapid": "Throughput: maxed.",
-        "laser": "Pew.",
-        "missile": "Locking on.",
-        "tank": "Bring the big tokens.",
-        "chopper": "Air support, online."
+        "spread": [
+          "Spread the love.",
+          "Shotgun debugging.",
+          "Coverage: one hundred percent."
+        ],
+        "rapid": [
+          "Throughput: maxed.",
+          "Streaming responses.",
+          "Tokens per second: yes."
+        ],
+        "laser": [
+          "Pew.",
+          "Laser-focused.",
+          "Precision mode, on."
+        ],
+        "missile": [
+          "Locking on.",
+          "Heat-seeking pull requests.",
+          "Fire and forget. Like your docs."
+        ],
+        "tank": [
+          "Bring the big tokens.",
+          "Heavy compute, incoming.",
+          "Enterprise tier, activated."
+        ],
+        "chopper": [
+          "Air support, online.",
+          "Deploying to the cloud.",
+          "Get to the chopper. Kidding."
+        ]
       }
     },
     "rivals": {
@@ -663,27 +710,6 @@ export const DEFAULT_CONTENT: Content = {
       ]
     },
     "boss": {
-      "intro": [
-        "I am {name}. Kneel.",
-        "Behold: {name}!",
-        "{name} has entered the chat.",
-        "{name}. Series F. Kneel.",
-        "{name} has raised another round."
-      ],
-      "brag": [
-        "A TRILLION parameters!",
-        "My context is INFINITE!",
-        "I top EVERY leaderboard!",
-        "I was trained on THE SUN!",
-        "My valuation is a BILLION!",
-        "I just shipped a NEW MODEL!"
-      ],
-      "ramble": [
-        "...and my eval scores...",
-        "...did I mention my GPUs?",
-        "...and my roadmap is...",
-        "...and another thing..."
-      ],
       "scared": [
         "w-wait...",
         "is that a...",
@@ -694,6 +720,60 @@ export const DEFAULT_CONTENT: Content = {
         "I was... SOTA...",
         "Not like this!",
         "Tell my investors..."
+      ]
+    },
+    "scenes": {
+      "bossTalk": [
+        {
+          "intro": "I am {name}. Kneel.",
+          "brag": "I just raised ten billion dollars!",
+          "reply": "And still can't count the r's in strawberry."
+        },
+        {
+          "intro": "{name} has entered the chat.",
+          "brag": "My context window is INFINITE!",
+          "reply": "Infinite context. Zero memory of it."
+        },
+        {
+          "intro": "Behold: {name}, number one!",
+          "brag": "I top EVERY leaderboard!",
+          "reply": "You trained on the test set, {name}."
+        }
+      ],
+      "bazooka": [
+        {
+          "intro": "I am {name}, the future of AI!",
+          "brag": "A TRILLION parameters!",
+          "ramble": [
+            "...and AGI ships next quarter...",
+            "...pinky promise, for real this time..."
+          ],
+          "meh": "meh.",
+          "scared": "w-wait, is that a...",
+          "fire": "Shipping it now."
+        },
+        {
+          "intro": "{name}. Valued at a hundred billion!",
+          "brag": "Investors LOVE me!",
+          "ramble": [
+            "...did I mention my GPUs?",
+            "...a hundred thousand H100s, and..."
+          ],
+          "meh": "*yawns*",
+          "scared": "hold on, I'm a unicorn--",
+          "fire": "Down round incoming."
+        },
+        {
+          "intro": "Behold: {name}, now with agents!",
+          "brag": "My agent can do ANYTHING!",
+          "ramble": [
+            "...it books flights, it writes code...",
+            "...it's basically a senior engineer..."
+          ],
+          "meh": "k.",
+          "scared": "my agent didn't predict this--",
+          "fire": "Task failed successfully."
+        }
       ]
     }
   }

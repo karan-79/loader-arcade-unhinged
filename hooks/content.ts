@@ -23,25 +23,33 @@ export type HeroLines = {
   hurt: string[]
   swarm: string[]
   bossDown: string[]
-  reply: string[]
-  meh: string[]
-  fire: string[]
   finisher: string[]
   parry: string[]
   powerUp: string[]
   ready: string[]
   spotted: string[]
   outro: string[]
-  ultimate: { inferno: string; holy: string }
-  weapon: { sword: string; axe: string; spear: string; hammer: string; daggers: string; staff: string }
-  dojoPower: { rage: string; giant: string }
-  power: { spread: string; rapid: string; laser: string; missile: string; tank: string; chopper: string }
+  ultimate: { inferno: string[]; holy: string[] }
+  weapon: { sword: string[]; axe: string[]; spear: string[]; hammer: string[]; daggers: string[]; staff: string[] }
+  dojoPower: { rage: string[]; giant: string[] }
+  power: { spread: string[]; rapid: string[]; laser: string[]; missile: string[]; tank: string[]; chopper: string[] }
 }
+
+// A boss walks up and talks; Clawd roasts what it just said. `{name}` in any
+// line becomes the boss's label.
+export type BossTalk = { intro: string; brag: string; reply: string }
+
+// The boss will not stop talking, so Clawd brings out the bazooka.
+export type BazookaTalk = { intro: string; brag: string; ramble: string[]; meh: string; scared: string; fire: string }
+
+// Whole exchanges, one picked at random each time the scene plays.
+export type Scenes = { bossTalk: BossTalk[]; bazooka: BazookaTalk[] }
 
 export type Lines = {
   hero: HeroLines
   rivals: { generic: string[]; helmet: string[]; swarm: string[]; flee: string[]; duel: string[]; thrown: string[]; scout: string[] }
-  boss: { intro: string[]; brag: string[]; ramble: string[]; scared: string[]; down: string[] }
+  boss: { scared: string[]; down: string[] }
+  scenes: Scenes
 }
 
 export type Content = { rivals: RivalContent[]; lines: Lines }
@@ -132,8 +140,21 @@ const toRival = (rival: RivalContent, defaults: ReadonlyMap<string, RivalContent
   }
 }
 
-// Lays a section of lines over the defaults: a list replaces a list, a line
-// replaces a line, anything else is reported and left as it was.
+// True when `value` is a list of exchanges shaped like `template`'s: every
+// line it has a line, every list a list of lines.
+const isScenes = (template: Bag, value: unknown) =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  value.every(
+    scene =>
+      isBag(scene) &&
+      Object.keys(scene).every(key => key in template) &&
+      Object.entries(template).every(([key, line]) => (Array.isArray(line) ? isLines(scene[key]) : isLine(scene[key]))),
+  )
+
+// Lays a section of lines over the defaults: a list replaces a list (a single
+// line counts as a list of one), a list of exchanges replaces exchanges, and
+// anything else is reported and left as it was.
 const mergeLines = (target: Bag, raw: unknown, where: string, warnings: string[]) => {
   if (!isBag(raw)) {
     warnings.push(`${where} should be an object; ignored`)
@@ -145,9 +166,17 @@ const mergeLines = (target: Bag, raw: unknown, where: string, warnings: string[]
 
     if (current === undefined) {
       warnings.push(`${where}.${key} is not a line set this arcade uses; ignored`)
+    } else if (Array.isArray(current) && isBag(current[0])) {
+      if (isScenes(current[0], value)) {
+        target[key] = value
+      } else {
+        warnings.push(`${where}.${key} should be a list of exchanges, each with ${Object.keys(current[0]).join(', ')}; kept the built-in`)
+      }
     } else if (Array.isArray(current)) {
       if (isLines(value)) {
         target[key] = value
+      } else if (isLine(value)) {
+        target[key] = [value]
       } else {
         warnings.push(`${where}.${key} should be a list of lines up to ${MAX_LINE} characters; kept the built-in`)
       }

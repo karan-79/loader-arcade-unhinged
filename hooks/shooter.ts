@@ -46,7 +46,7 @@ import {
 } from './arena'
 import type { Actor } from './actors'
 import { cellTop, heroFile, keyOf, rivalColumns, rivalFile, walkFrame } from './actors'
-import { BOSS_LINES, HERO_LINES, RIVAL_LINES, named, pick, tauntFor } from './banter'
+import { BOSS_LINES, HERO_LINES, RIVAL_LINES, bazookaTalk, bossTalk, pick, tauntFor } from './banter'
 import { ARM_ROW, BODY_WIDTH, POSE_ROWS, drawHero } from './hero'
 import type { Talk } from './talk'
 import { createTalk, later, quip, say as sayTo, stepTalk } from './talk'
@@ -376,27 +376,30 @@ const chatter = (shooter: Shooter, who: Speaker, text: string) => {
 
 const isTalking = (shooter: Shooter) => shooter.scene.length > 0
 
-// A boss's entrance: it introduces itself and brags. Clawd shrugs it off, or,
-// when it will not stop talking, says "meh" and brings out a bazooka.
+// A boss's entrance: it introduces itself and brags, and Clawd roasts it, or,
+// when it will not stop talking, says "meh" and brings out a bazooka. Each is
+// one of a few whole exchanges, picked at random.
 const bossIntro = (shooter: Shooter, boss: Boss, random: () => number): Line[] => {
   const name = rivalAt(boss.rival).label
-  const opening: Line[] = [
-    { who: 'boss', text: named(pick(BOSS_LINES.intro, random), name), seconds: 1.6 },
-    { who: 'boss', text: pick(BOSS_LINES.brag, random), seconds: 1.5 },
-  ]
 
   if (vehicleOf(shooter) !== 'foot' || random() < 0.5) {
-    return [...opening, { who: 'hero', text: pick(HERO_LINES.reply, random), seconds: 1.3 }]
+    const talk = bossTalk(name, random)
+    return [
+      { who: 'boss', text: talk.intro, seconds: 1.6 },
+      { who: 'boss', text: talk.brag, seconds: 1.5 },
+      { who: 'hero', text: talk.reply, seconds: 1.6 },
+    ]
   }
 
+  const talk = bazookaTalk(name, random)
   return [
-    ...opening,
-    { who: 'boss', text: pick(BOSS_LINES.ramble, random), seconds: 1.3 },
-    { who: 'boss', text: pick(BOSS_LINES.ramble, random), seconds: 1.2 },
-    { who: 'hero', text: pick(HERO_LINES.meh, random), seconds: 1.1 },
+    { who: 'boss', text: talk.intro, seconds: 1.6 },
+    { who: 'boss', text: talk.brag, seconds: 1.5 },
+    ...talk.ramble.map((text, index): Line => ({ who: 'boss', text, seconds: index === 0 ? 1.3 : 1.2 })),
+    { who: 'hero', text: talk.meh, seconds: 1.1 },
     { who: 'hero', text: '', seconds: 0.8, action: 'raise' },
-    { who: 'boss', text: pick(BOSS_LINES.scared, random), seconds: 1 },
-    { who: 'hero', text: pick(HERO_LINES.fire, random), seconds: 1.4, action: 'fire' },
+    { who: 'boss', text: talk.scared, seconds: 1 },
+    { who: 'hero', text: talk.fire, seconds: 1.4, action: 'fire' },
   ]
 }
 
@@ -1408,7 +1411,7 @@ export const stepShooter = (shooter: Shooter, seconds: number, columns: number, 
     shooter.rounds = MAGAZINE
     shooter.reload = 0
     popWord(shooter.pops, `${POWER_NAMES[power]}!`, box.right)
-    say(shooter, 'hero', HERO_LINES.power[power])
+    say(shooter, 'hero', pick(HERO_LINES.power[power], random))
     burst(shooter.sparks, (box.left + box.right) / 2, (box.top + box.bottom) / 2, 12, [POWER_COLORS[power], 0xffffff], random, 18)
   }
 

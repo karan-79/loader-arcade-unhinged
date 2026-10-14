@@ -47,7 +47,7 @@ import {
   stepSparks,
   stepWaves,
 } from './arena'
-import { BOSS_LINES, HERO_LINES, RIVAL_LINES, named, pick, tauntFor } from './banter'
+import { BOSS_LINES, HERO_LINES, RIVAL_LINES, bossTalk, pick, tauntFor } from './banter'
 import type { Pose } from './hero'
 import { BODY_WIDTH, POSE_ROWS, drawHero } from './hero'
 import { clamp, createCanvas, packCanvas, plot } from './raster'
@@ -446,14 +446,15 @@ const stepBoss = (dojo: Dojo, boss: Boss, seconds: number, columns: number, rand
   boss.x = boss.side > 0 ? Math.max(stop, boss.x - walk) : Math.min(stop, boss.x + walk)
   boss.untilAttack -= seconds
 
-  // Toe to toe for the first time: the boss introduces itself; Clawd is unmoved.
+  // Toe to toe for the first time: the boss introduces itself; Clawd roasts it.
   if (!boss.hasSpoken && Math.abs(boss.x - stop) < 1) {
     boss.hasSpoken = true
     boss.untilAttack = 3.6
     boss.hush = 3.2
-    say(dojo.chat, 'boss', named(pick(BOSS_LINES.intro, random), rivalAt(boss.rival).label), 1.8)
-    later(dojo.chat, 'boss', pick(BOSS_LINES.brag, random), 1.8, 1.6)
-    later(dojo.chat, 'hero', pick(HERO_LINES.reply, random), 3.4, 1.4)
+    const talk = bossTalk(rivalAt(boss.rival).label, random)
+    say(dojo.chat, 'boss', talk.intro, 1.8)
+    later(dojo.chat, 'boss', talk.brag, 1.8, 1.6)
+    later(dojo.chat, 'hero', talk.reply, 3.4, 1.6)
   }
 
   if (boss.lunge === null && boss.untilAttack <= 0 && Math.abs(boss.x - stop) < 1) {
@@ -1037,7 +1038,7 @@ export const stepDojo = (dojo: Dojo, seconds: number, columns: number, random: (
   for (const power of arrived) {
     dojo.power = { kind: power, seconds: POWER_SECONDS }
     popWord(dojo.pops, `${POWER_NAMES[power]}!`, center)
-    say(dojo.chat, 'hero', HERO_LINES.dojoPower[power])
+    say(dojo.chat, 'hero', pick(HERO_LINES.dojoPower[power], random))
     burst(dojo.sparks, center, GROUND - 5, 14, [POWER_COLORS[power], 0xffffff], random, 20)
   }
 

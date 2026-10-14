@@ -65,26 +65,30 @@ Drawing tips:
 
 ## Lines
 
-`lines` has three groups. A list replaces the built-in list; a single line
-replaces a single line.
+`lines` has four groups. A list replaces the built-in list (a single line counts
+as a list of one); a list of exchanges replaces the built-in exchanges. Where
+there's a list, the arcade picks one at random each time.
 
 ```json
 {
   "lines": {
     "hero": {
       "streak": ["Easy money.", "Next!"],
-      "weapon": { "axe": "Axe-ellent." }
+      "weapon": { "axe": ["Axe-ellent.", "Chop chop."] }
     },
-    "boss": { "intro": ["{name} demands tribute."] }
+    "scenes": {
+      "bossTalk": [{ "intro": "{name} demands tribute.", "brag": "I have a moat!", "reply": "You have a puddle." }]
+    }
   }
 }
 ```
 
 | Group | Lines |
 | --- | --- |
-| `hero` | `streak` (on a roll), `hurt`, `swarm`, `bossDown`, `reply` (to a boss's speech), `meh` and `fire` (the bazooka scene), `finisher` (the knight's last cut), `parry`, `powerUp`, `ready` (as the fight starts), `spotted` (when something happens), `outro` (as a turn ends); and single lines per `ultimate` (`inferno`, `holy`), `weapon` (`sword`, `axe`, `spear`, `hammer`, `daggers`, `staff`), `dojoPower` (`rage`, `giant`) and shooter `power` (`spread`, `rapid`, `laser`, `missile`, `tank`, `chopper`). |
+| `hero` | `streak` (on a roll), `hurt`, `swarm`, `bossDown`, `finisher` (the knight's last cut), `parry`, `powerUp`, `ready` (as the fight starts), `spotted` (when something happens), `outro` (as a turn ends); and a list each per `ultimate` (`inferno`, `holy`), `weapon` (`sword`, `axe`, `spear`, `hammer`, `daggers`, `staff`), `dojoPower` (`rage`, `giant`) and shooter `power` (`spread`, `rapid`, `laser`, `missile`, `tank`, `chopper`). |
 | `rivals` | `generic` (anyone's taunt), `helmet`, `swarm`, `flee`, `duel` (the knight's opening), `thrown`, `scout` (peeking in, then running). |
-| `boss` | `intro` (`{name}` becomes the boss's label), `brag`, `ramble`, `scared`, `down`. |
+| `boss` | `scared`, `down`. |
+| `scenes` | Whole exchanges, one picked at random each time. `bossTalk`: a boss's `intro` and `brag`, and Clawd's `reply` roasting it. `bazooka`: `intro`, `brag`, a `ramble` list, Clawd's `meh`, the boss's `scared`, and Clawd's `fire` line. `{name}` in any of them becomes the boss's label. |
 
 Lines are drawn in the arcade's top row, so keep them short: up to 60
 characters, and shorter reads better.
