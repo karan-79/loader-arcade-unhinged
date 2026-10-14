@@ -3,6 +3,8 @@
 // Every pose is POSE_WIDTH wide with the body in its first BODY_WIDTH columns,
 // so arms and legs can reach past it; `poseFacing` mirrors one to face left.
 
+import type { Fine } from './fine'
+import { SCALE, sprite } from './fine'
 import type { Canvas } from './raster'
 import { mirror, plotSprite } from './raster'
 import { scaleSprite } from './rivals'
@@ -89,4 +91,16 @@ export const drawHero = (
   plotSprite(canvas, drawn, palette, Math.round(left + shift), top)
 
   return { top, scale }
+}
+
+// Draws Clawd on the chill scenes' fine canvas, `unit` fine pixels to its
+// pixel: its body's left edge at fine column `x`, standing on fine row
+// `ground`, `lift` fine pixels up; answers its top fine row.
+export const drawHeroFine = (fine: Fine, pose: Pose, facing: 1 | -1, x: number, ground: number, lift = 0, unit = SCALE) => {
+  const { rows, left } = poseFacing(pose, facing, 0)
+  const top = ground - rows.length * unit - Math.round(lift)
+
+  sprite(fine, rows, HERO_PALETTE, Math.round(x) + left * unit, top, unit)
+
+  return top
 }

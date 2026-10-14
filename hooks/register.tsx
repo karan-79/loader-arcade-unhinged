@@ -6,12 +6,12 @@ import type { Act, Pacing } from './acts'
 import { DEFAULT_PACING, actAt, pacingFor, pickFresh, remember } from './acts'
 import type { Actor } from './actors'
 import { ARENA_ROWS } from './arena'
-import { beachCells, beginBeach, createBeach, stepBeach } from './beach'
+import { beachCells, beachPicture, beginBeach, createBeach, stepBeach } from './beach'
 import { CONTENT_PATH, applyContent } from './content'
-import { beginCruise, createCruise, cruiseCells, stepCruise } from './cruise'
+import { beginCruise, createCruise, cruiseCells, cruisePicture, stepCruise } from './cruise'
 import { beginDojoTurn, createDojo, dojoActors, dojoCells, endDojoTurn, stepDojo } from './dojo'
 import { beginKnightTurn, createKnight, endKnightTurn, knightActors, knightCells, stepKnight } from './knight'
-import { beginMeditation, createMeditation, meditationCells, stepMeditation } from './meditation'
+import { beginMeditation, createMeditation, meditationCells, meditationPicture, stepMeditation } from './meditation'
 import { beginShooterTurn, createShooter, endShooterTurn, shooterActors, shooterCells, stepShooter } from './shooter'
 
 const style = atom({ plugin: 'loader-arcade-unhinged', key: 'style' } as const, 'fight')
@@ -92,7 +92,9 @@ const toStyle = (value: unknown): AnimStyle | undefined => {
   return (STYLES as readonly string[]).includes(value) ? (value as AnimStyle) : LEGACY[value]
 }
 
-type BandMount = { requestId: string; columns: number; rows: number; isImg: boolean }
+// How the band is drawn: cells, cells with pictures of the fighters over them,
+// or (a chill scene where pictures show) one picture repainted every frame.
+type BandMount = { requestId: string; columns: number; rows: number; isImg: boolean; isPicture: boolean }
 
 const band: {
   timer: Timer | undefined
@@ -161,6 +163,20 @@ function frameCells(columns: number, rows: number, withActors = true) {
       return cruiseCells(band.drive, columns, rows)
     case 'meditation':
       return meditationCells(band.meditation, columns, rows)
+  }
+}
+
+// A chill scene's frame as one picture, or undefined for the fights.
+function framePicture(columns: number, rows: number) {
+  switch (band.scene) {
+    case 'beach':
+      return beachPicture(band.beach, columns, rows)
+    case 'drive':
+      return cruisePicture(band.drive, columns, rows)
+    case 'meditation':
+      return meditationPicture(band.meditation, columns, rows)
+    default:
+      return undefined
   }
 }
 
@@ -305,8 +321,22 @@ function startBand($: EngineInterface) {
       return
     }
 
-    const { requestId, columns, rows, isImg } = mount
+    const { requestId, columns, rows, isImg, isPicture } = mount
     stepScene(columns)
+
+    const source = isPicture ? framePicture(columns, rows) : undefined
+    if (source !== undefined) {
+      void $.ui
+        .blit({ requestId, key: BAND_KEY, source })
+        .then(result => {
+          if ('deny' in result && band.mount?.requestId === requestId) {
+            band.mount = undefined
+          }
+        })
+        .catch(() => undefined)
+
+      return
+    }
 
     // Pictures move only on a redraw: each frame is one.
     if (isImg) {
@@ -531,7 +561,7 @@ export const register: Register = on => {
 
     if (isImg) {
       await read($, imgFrame)
-      band.mount = { requestId: e.requestId, columns: width, rows: ARENA_ROWS, isImg }
+      band.mount = { requestId: e.requestId, columns: width, rows: ARENA_ROWS, isImg, isPicture: false }
 
       const pictures = actorsOf(width).map(actor => (
         <Box key={`at-${actor.key}`} position="absolute" top={actor.top} left={actor.left}>
@@ -554,7 +584,16 @@ export const register: Register = on => {
     }
 
     const rows = Math.max(1, Math.min(BAND_ROWS[band.scene], e.props.maxRows))
-    band.mount = { requestId: e.requestId, columns: width, rows, isImg: false }
+
+    // A chill scene, finely drawn, where the terminal shows pictures.
+    const pictureColumns = Math.min(255, width)
+    const picture = band.hasPictures && band.hasGraphics ? framePicture(pictureColumns, rows) : undefined
+    if (picture !== undefined) {
+      band.mount = { requestId: e.requestId, columns: pictureColumns, rows, isImg: false, isPicture: true }
+      return <Image key={BAND_KEY} source={picture} columns={pictureColumns} rows={rows} alt=" " />
+    }
+
+    band.mount = { requestId: e.requestId, columns: width, rows, isImg: false, isPicture: false }
 
     return <Raster key={BAND_KEY} columns={width} rows={rows} cells={frameCells(width, rows)} />
   })

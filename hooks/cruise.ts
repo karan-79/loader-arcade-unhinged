@@ -4,8 +4,9 @@
 // with the headlights on and street lamps going by.
 
 import type { Act } from './acts'
-import type { Canvas } from './raster'
-import { clamp, createCanvas, mix, noise, packCanvas, plot, plotSprite } from './raster'
+import type { Fine } from './fine'
+import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect } from './fine'
+import { clamp, mix, noise } from './raster'
 
 const PALETTE: Record<string, number> = {
   r: 0xd97757, // body
@@ -15,17 +16,7 @@ const PALETTE: Record<string, number> = {
   t: 0xff4d4d, // tail light
 }
 
-// Facing right, 4 pixel rows; the wheels alternate to roll.
-const CAR = ['...rrr..', '..rwwwr.', 'trrrrrrh']
-const WHEELS = ['.kk..kk.', '.k...k..']
-const CAR_WIDTH = 8
-
-const ROAD = 0x3a3a3a
 const LANE = 0xd8d8d8
-const HILLS = 0x2f5d3a
-const HILLS_DUSK = 0x4a3360
-const HILLS_NIGHT = 0x1c2433
-const TREE = 0x2e7d32
 const TRUNK = 0x6b4226
 const SUN = 0xffe066
 const SUN_DUSK = 0xff7a3d
@@ -82,92 +73,220 @@ export const stepCruise = (scene: Cruise, seconds: number, columns: number, rand
 }
 
 // Scenery scrolls at `rate` of the road's speed: the spot in the world that
-// column `x` shows.
-const scrolled = (scene: Cruise, x: number, rate: number) => x + scene.distance * rate
+// fine column `x` shows.
+const scrolled = (scene: Cruise, x: number, rate: number) => x + scene.distance * SCALE * rate
 
-const drawSky = (canvas: Canvas, scene: Cruise, columns: number) => {
+const SKY = { top: 0x5fa8e8, low: 0xc4e6f7 }
+const SKY_DUSK = { top: 0x3b2a6b, low: 0xff9a5a }
+const SKY_NIGHT = { top: 0x070b24, low: 0x1e2a55 }
+const MOUNTAINS = 0x6f86a8
+const SNOW = 0xf2f6ff
+const GRASS = 0x4f8a3a
+const ASPHALT = 0x34363b
+
+// Fine rows: the road's top edge, and its centre line.
+const ROAD_TOP = 24
+const LANE_ROW = 28
+
+const skyOf = (scene: Cruise) => {
+  if (isNight(scene)) {
+    return SKY_NIGHT
+  }
   const dusk = duskOf(scene)
+  return { top: mix(SKY.top, SKY_DUSK.top, dusk), low: mix(SKY.low, SKY_DUSK.low, dusk) }
+}
+
+// Darkens scenery toward the sky's colour as the light goes.
+const shaded = (scene: Cruise, color: number) =>
+  isNight(scene) ? mix(color, 0x0b1028, 0.75) : mix(color, 0x4a3360, duskOf(scene) * 0.5)
+
+const drawSky = (fine: Fine, scene: Cruise) => {
+  const sky = skyOf(scene)
+  gradient(fine, 0, ROAD_TOP, sky.top, sky.low)
 
   if (isNight(scene)) {
-    for (let x = 0; x < columns; x++) {
-      const at = Math.floor(scrolled(scene, x, 0.02))
-      if (noise(at, 11) > 0.92 && noise(at, Math.floor(scene.seconds * 2)) > 0.2) {
-        plot(canvas, x, Math.floor(noise(at, 5) * 3), STAR, true)
+    for (let x = 0; x < fine.width; x += 2) {
+      const at = Math.floor(scrolled(scene, x, 0.01) / 2)
+      if (noise(at, 11) > 0.93) {
+        dot(fine, x, 1 + noise(at, 5) * 12, STAR, 0.4 + 0.6 * noise(at, Math.floor(scene.seconds * 3)))
       }
     }
+    const moon = fine.width * 0.7
+    glow(fine, moon, 6, 12, 0xf2f0e0, 0.25)
+    disc(fine, moon, 6, 3.5, 0xf2f0e0)
+    disc(fine, moon + 1.8, 5, 3.2, sky.top)
     return
   }
 
-  const sunX = Math.round(columns * 0.75)
-  const sunY = dusk * 3
-  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {
-    plot(canvas, sunX + dx, sunY + dy, mix(SUN, SUN_DUSK, dusk))
+  const dusk = duskOf(scene)
+  const sunX = fine.width * 0.75
+  const sunY = 6 + dusk * 10
+  const sun = mix(SUN, SUN_DUSK, dusk)
+  glow(fine, sunX, sunY, 16 + dusk * 10, sun, 0.45 + dusk * 0.2, 0.8)
+  disc(fine, sunX, sunY, 4, sun)
+
+  const tint = mix(0xffffff, 0xffb08a, dusk)
+  const span = fine.width + 60
+  for (let cloud = 0; cloud < 3; cloud++) {
+    const x = ((noise(cloud, 41) * span - scrolled(scene, 0, 0.03)) % span + span) % span - 30
+    const y = 3 + cloud * 3
+    const size = 2.5 + noise(cloud, 13) * 1.5
+    for (const [dx, dy, r] of [[0, 1, 1], [size * 1.4, 0, 1.3], [size * 2.8, 1, 1.1], [size * 4, 1.5, 0.8]] as const) {
+      disc(fine, x + dx, y + dy, size * r, tint, 0.85, 0.6)
+    }
   }
 }
 
-export const cruiseCells = (scene: Cruise, columns: number, rows: number) => {
-  const canvas = createCanvas(columns, rows)
-  const road = canvas.pixelRows - 1
-  const dusk = duskOf(scene)
-  const hills = isNight(scene) ? HILLS_NIGHT : mix(HILLS, HILLS_DUSK, dusk)
-
-  drawSky(canvas, scene, columns)
-
-  // Far hills: a rolling silhouette, slow.
-  for (let x = 0; x < columns; x++) {
-    const at = scrolled(scene, x, 0.15)
-    const height = 1.5 + 1.2 * Math.sin(at * 0.09) + 0.8 * Math.sin(at * 0.23 + 1)
-    for (let y = road - 1; y > road - 1 - height; y--) {
-      plot(canvas, x, y, hills)
+// A silhouette scrolling at `rate`: for each column, how many fine rows tall.
+const ridge = (fine: Fine, scene: Cruise, rate: number, base: number, height: (at: number) => number, color: (at: number, depth: number, y: number) => number) => {
+  for (let x = 0; x < fine.width; x++) {
+    const at = scrolled(scene, x, rate)
+    const top = base - height(at)
+    for (let y = Math.max(0, Math.floor(top)); y < base; y++) {
+      dot(fine, x, y, color(at, y - top, y))
     }
   }
+}
+
+const drawTree = (fine: Fine, scene: Cruise, x: number, kind: number) => {
+  const ground = ROAD_TOP
+  const crown = shaded(scene, kind > 0.6 ? 0x2e6b35 : 0x3f8f3a)
+  const light = shaded(scene, kind > 0.6 ? 0x3d8a44 : 0x58a84a)
+  rect(fine, x - 0.5, ground - 4, 2, 4, shaded(scene, TRUNK))
+
+  if (kind > 0.6) {
+    // A pine: three tiers.
+    for (let tier = 0; tier < 3; tier++) {
+      const top = ground - 13 + tier * 3
+      for (let dy = 0; dy < 5; dy++) {
+        const half = 1 + dy * (0.8 + tier * 0.1)
+        rect(fine, x - half, top + dy, half * 2 + 1, 1, dy < 2 ? light : crown)
+      }
+    }
+  } else {
+    disc(fine, x, ground - 9, 5, crown, 1, 0.9)
+    disc(fine, x - 1.5, ground - 10.5, 2.5, light, 0.8)
+  }
+}
+
+const drawLamp = (fine: Fine, x: number) => {
+  rect(fine, x, ROAD_TOP - 14, 1, 14, 0x55585e)
+  line(fine, x, ROAD_TOP - 14, x + 3, ROAD_TOP - 15, 0x55585e)
+  glow(fine, x + 3, ROAD_TOP - 13, 10, LAMP, 0.5)
+  glow(fine, x + 4, ROAD_TOP + 3, 12, LAMP, 0.35, 0.3)
+  rect(fine, x + 2, ROAD_TOP - 14, 3, 1, LAMP)
+}
+
+const drawCar = (fine: Fine, scene: Cruise, columns: number) => {
+  const x = carX(columns) * SCALE
+  const bob = scene.speed > 1 && Math.floor(scene.seconds * 6) % 3 === 0 ? 1 : 0
+  const base = fine.height - 4 - bob
+  const body = PALETTE.r!
+  const dark = mix(body, 0x000000, 0.3)
+
+  disc(fine, x + 16, fine.height - 2, 17, 0x000000, 0.3, 0.12)
+
+  // Lower body, with a darker sill and a highlight along the top.
+  rect(fine, x + 1, base - 7, 30, 6, body)
+  rect(fine, x, base - 6, 1, 4, body)
+  rect(fine, x + 31, base - 6, 1, 4, body)
+  rect(fine, x + 1, base - 2, 30, 1, dark)
+  rect(fine, x + 2, base - 7, 28, 1, mix(body, 0xffffff, 0.25))
+
+  // The cabin: a sloped roof, glass, a pillar, and Clawd at the wheel.
+  for (let dy = 0; dy < 6; dy++) {
+    const left = x + 9 - Math.min(dy, 3)
+    const right = x + 21 + Math.min(dy, 4)
+    rect(fine, left, base - 13 + dy, right - left, 1, dy === 0 ? body : PALETTE.w!)
+  }
+  rect(fine, x + 15, base - 12, 1, 5, body)
+  rect(fine, x + 18, base - 12, 5, 4, 0xd97757)
+  dot(fine, x + 19, base - 11, 0x141414)
+  dot(fine, x + 21, base - 11, 0x141414)
+  dot(fine, x + 19, base - 10, 0x141414)
+  dot(fine, x + 21, base - 10, 0x141414)
+  rect(fine, x + 10, base - 12, 4, 1, 0xffffff, 0.35)
+
+  // Lights.
+  rect(fine, x + 31, base - 6, 1, 2, PALETTE.h!)
+  rect(fine, x, base - 6, 1, 2, PALETTE.t!)
+  if (isNight(scene)) {
+    glow(fine, x - 1, base - 5, 5, PALETTE.t!, 0.6)
+    for (let dx = 1; dx <= 44; dx++) {
+      const spread = dx * 0.22
+      for (let dy = -spread * 0.4; dy <= spread; dy++) {
+        dot(fine, x + 31 + dx, base - 5 + dy, LAMP, 0.35 * (1 - dx / 45))
+      }
+    }
+  } else if (scene.act === 0 && Math.floor(scene.seconds * 4) % 4 === 1) {
+    glow(fine, x + 32, base - 5, 4, LAMP, 0.8)
+  }
+
+  // Wheels, their hubs turning with the road.
+  const turn = (scene.distance * SCALE) / 3.5
+  for (const cx of [x + 7, x + 24]) {
+    disc(fine, cx, base, 3.6, 0x1e1e1e)
+    disc(fine, cx, base, 2, 0xb8bcc4)
+    line(fine, cx - Math.cos(turn) * 1.6, base - Math.sin(turn) * 1.6, cx + Math.cos(turn) * 1.6, base + Math.sin(turn) * 1.6, 0x55585e)
+  }
+}
+
+const drawCruise = (fine: Fine, scene: Cruise, columns: number) => {
+  drawSky(fine, scene)
+
+  // Far mountains, snow-capped, hazy with distance; very slow.
+  ridge(fine, scene, 0.05, ROAD_TOP - 6, at => 8 + 5 * Math.sin(at * 0.025) + 3 * Math.sin(at * 0.071 + 2) + 2 * Math.abs(Math.sin(at * 0.13)),
+    (_, depth, y) => (y < ROAD_TOP - 17 && depth < 3 && !isNight(scene) ? mix(SNOW, skyOf(scene).low, duskOf(scene) * 0.6) : shaded(scene, mix(MOUNTAINS, skyOf(scene).low, 0.35))))
+
+  // Rolling hills, nearer and faster.
+  ridge(fine, scene, 0.18, ROAD_TOP - 2, at => 4 + 2.5 * Math.sin(at * 0.04) + 1.5 * Math.sin(at * 0.11 + 1),
+    (at, depth) => shaded(scene, depth < 1 ? 0x6fb04f : noise(Math.floor(at), Math.floor(depth)) > 0.85 ? 0x3f7a30 : GRASS))
+  rect(fine, 0, ROAD_TOP - 2, fine.width, 2, shaded(scene, 0x4a7f36))
 
   // Trees by day, street lamps by night, closer and faster.
-  for (let x = 0; x < columns; x++) {
-    const at = Math.floor(scrolled(scene, x, 0.6))
-    if (at % 23 !== 0) {
-      continue
-    }
-
+  const spacing = 23 * SCALE
+  const offset = scrolled(scene, 0, 0.6)
+  for (let at = Math.floor(offset / spacing) * spacing; at < offset + fine.width + spacing; at += spacing) {
+    const x = at - offset
+    const which = noise(Math.floor(at / spacing), 1)
     if (isNight(scene)) {
-      for (let y = road - 4; y < road; y++) {
-        plot(canvas, x, y, 0x55585e)
-      }
-      plot(canvas, x + 1, road - 4, LAMP)
-      plot(canvas, x + 1, road - 3, mix(LAMP, 0x000000, 0.6), true)
-    } else if (noise(Math.floor(at / 23), 1) > 0.3) {
-      const crown = mix(TREE, HILLS_DUSK, dusk * 0.6)
-      plot(canvas, x, road - 1, TRUNK)
-      for (const [dx, dy] of [[-1, 2], [0, 2], [1, 2], [0, 3], [-1, 3], [1, 3], [0, 4]] as const) {
-        plot(canvas, x + dx, road - dy, crown)
+      drawLamp(fine, x)
+    } else if (which > 0.25) {
+      drawTree(fine, scene, x, which)
+      if (which > 0.75) {
+        drawTree(fine, scene, x + 7, noise(Math.floor(at / spacing), 2))
       }
     }
   }
 
-  // The road, its lane dashes scrolling at full speed.
-  for (let x = 0; x < columns; x++) {
+  // The road: a pale edge, speckled asphalt and a dashed centre line.
+  for (let x = 0; x < fine.width; x++) {
     const at = Math.floor(scrolled(scene, x, 1))
-    plot(canvas, x, road, at % 8 < 4 ? LANE : ROAD)
+    dot(fine, x, ROAD_TOP, shaded(scene, 0xb8b8b0))
+    for (let y = ROAD_TOP + 1; y < fine.height; y++) {
+      dot(fine, x, y, noise(at, y) > 0.9 ? mix(ASPHALT, 0x6a6a6a, 0.5) : ASPHALT)
+    }
+    if (Math.floor(at / 6) % 3 === 0) {
+      dot(fine, x, LANE_ROW, shaded(scene, LANE))
+    }
   }
 
   for (const puff of scene.puffs) {
-    plot(canvas, puff.x, road - 1 + puff.y, mix(0xcfcfcf, 0x444444, puff.age / 0.8), true)
+    const fade = puff.age / 0.8
+    disc(fine, puff.x * SCALE, fine.height - 6 + puff.y * SCALE, 1.5 + fade * 2.5, mix(0xcfcfcf, 0x777777, fade), 0.6 * (1 - fade))
   }
 
-  const x = carX(columns)
-  const bob = scene.speed > 1 && Math.floor(scene.seconds * 6) % 3 === 0 ? 1 : 0
-  const wheels = scene.speed > 1 && Math.floor(scene.distance / 2) % 2 === 1 ? WHEELS[1]! : WHEELS[0]!
-  plotSprite(canvas, CAR, PALETTE, x, road - 4 - bob)
-  plotSprite(canvas, [wheels], PALETTE, x, road - 1)
+  drawCar(fine, scene, columns)
+}
 
-  // Headlights: a soft beam ahead at night, a blink when starting up.
-  if (isNight(scene)) {
-    for (let dx = 1; dx <= 10; dx++) {
-      plot(canvas, x + CAR_WIDTH + dx, road - 2 - bob + (dx > 5 ? 1 : 0), mix(LAMP, 0x222222, dx / 11), true)
-    }
-  } else if (scene.act === 0 && Math.floor(scene.seconds * 4) % 4 === 1) {
-    plot(canvas, x + CAR_WIDTH, road - 2, LAMP)
-  }
+export const cruiseCells = (scene: Cruise, columns: number, rows: number) => {
+  const fine = createFine(columns, rows)
+  drawCruise(fine, scene, columns)
+  return fineCells(fine)
+}
 
-  return packCanvas(canvas)
+export const cruisePicture = (scene: Cruise, columns: number, rows: number) => {
+  const fine = createFine(columns, rows)
+  drawCruise(fine, scene, columns)
+  return finePicture(fine)
 }

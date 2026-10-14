@@ -1,9 +1,10 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 import { DEFAULT_PACING, MIN_SAMPLES, actAt, pacingFor, pickFresh, remember } from '../hooks/acts'
-import { beachCells, beginBeach, createBeach, stepBeach } from '../hooks/beach'
-import { beginCruise, createCruise, cruiseCells, stepCruise } from '../hooks/cruise'
-import { beginMeditation, createMeditation, meditationCells, stepMeditation } from '../hooks/meditation'
+import { beachCells, beachPicture, beginBeach, createBeach, stepBeach } from '../hooks/beach'
+import { beginCruise, createCruise, cruiseCells, cruisePicture, stepCruise } from '../hooks/cruise'
+import { beginMeditation, createMeditation, meditationCells, meditationPicture, stepMeditation } from '../hooks/meditation'
+import { SCALE } from '../hooks/fine'
 import { createDojo, dojoCells, stepDojo } from '../hooks/dojo'
 import { createKnight, knightCells, stepKnight } from '../hooks/knight'
 import { createShooter, shooterCells, stepShooter } from '../hooks/shooter'
@@ -55,12 +56,12 @@ test('a turn moves through the acts, paced by default until it has learned', asy
 test('the chill scenes play through every act', async () => {
   const random = seeded(9)
   const scenes = [
-    { scene: createBeach(), begin: beginBeach, step: stepBeach, cells: beachCells, rows: 5 },
-    { scene: createCruise(), begin: beginCruise, step: stepCruise, cells: cruiseCells, rows: 4 },
-    { scene: createMeditation(), begin: beginMeditation, step: stepMeditation, cells: meditationCells, rows: 5 },
+    { scene: createBeach(), begin: beginBeach, step: stepBeach, cells: beachCells, picture: beachPicture, rows: 5 },
+    { scene: createCruise(), begin: beginCruise, step: stepCruise, cells: cruiseCells, picture: cruisePicture, rows: 4 },
+    { scene: createMeditation(), begin: beginMeditation, step: stepMeditation, cells: meditationCells, picture: meditationPicture, rows: 5 },
   ] as const
 
-  for (const { scene, begin, step, cells, rows } of scenes) {
+  for (const { scene, begin, step, cells, picture, rows } of scenes) {
     begin(scene as never)
     for (let i = 0; i < 600; i++) {
       const act = actAt(i * 0.066, DEFAULT_PACING)
@@ -69,6 +70,9 @@ test('the chill scenes play through every act', async () => {
       ;(step as (scene: unknown, seconds: number, columns: number, random: () => number) => void)(scene, 0.066, 90, random)
       if (i % 50 === 0) {
         expect((cells as (scene: unknown, columns: number, rows: number) => string)(scene, 90, rows).length).toBe(cellsLength(90, rows))
+        const frame = (picture as (scene: unknown, columns: number, rows: number) => { rgba: string; width: number; height: number })(scene, 90, rows)
+        expect([frame.width, frame.height]).toEqual([90 * SCALE, rows * 2 * SCALE])
+        expect(frame.rgba.length).toBe(Math.ceil((frame.width * frame.height * 4) / 3) * 4)
       }
     }
     expect(scene.act).toBe(4)

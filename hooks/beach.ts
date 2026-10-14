@@ -3,9 +3,11 @@
 // wave takes it as the sun sets, then night falls by a bonfire.
 
 import type { Act } from './acts'
-import { EYE_COLUMNS, EYE_ROW, drawHero } from './hero'
-import type { Canvas, Overlay } from './raster'
-import { clamp, createCanvas, mix, noise, packCanvas, plot, plotSprite } from './raster'
+import type { Fine } from './fine'
+import { SCALE, createFine, disc, dot, fineCells, finePicture, glow, gradient, line, rect } from './fine'
+import { BODY_WIDTH, EYE_COLUMNS, EYE_ROW, drawHeroFine } from './hero'
+import type { Overlay } from './raster'
+import { clamp, mix, noise } from './raster'
 
 const SAND = 0xe6c98a
 const SAND_NIGHT = 0x7a6448
@@ -20,12 +22,8 @@ const STAR = 0xc8d0ff
 const GULL = 0xf4f4f4
 const SHADES = 0x141414
 
-const UMBRELLA = ['.rwrwrwrwr.', 'rwrwrwrwrwr', ...Array.from({ length: 8 }, () => '.....p.....')]
-const UMBRELLA_PALETTE = { r: 0xe0453a, w: 0xf6f0e6, p: 0xb0a090 }
-
-// The sandcastle, drawn up to as many pixels as Clawd has built.
-const CASTLE = ['c.c.c', 'ccccc', 'cc.cc', 'ccccc']
-const CASTLE_PIXELS = CASTLE.join('').split('').filter(pixel => pixel === 'c').length
+// How much sandcastle there is to build, in pats.
+const CASTLE_PIXELS = 18
 const CASTLE_COLOR = 0xd9b26f
 
 const SEA_TOP = 5
@@ -117,101 +115,274 @@ export const stepBeach = (scene: Beach, seconds: number, columns: number, random
   scene.sparks = scene.sparks.filter(spark => spark.age < 0.8)
 }
 
-const drawSky = (canvas: Canvas, scene: Beach, columns: number) => {
+// Fine rows: the sea from the horizon, the sand from the shore.
+const SEA_LINE = 14
+const SAND_LINE = 27
+// Clawd is drawn this many fine pixels to his pixel: small in a big world.
+const UNIT = 3
+
+const SKY = { top: 0x5fa8e8, low: 0xc4e6f7 }
+const SKY_DUSK = { top: 0x3b2a6b, low: 0xff9a5a }
+const SKY_NIGHT = { top: 0x070b24, low: 0x1e2a55 }
+
+const skyOf = (scene: Beach) => {
+  if (isNight(scene)) {
+    return SKY_NIGHT
+  }
   const dusk = duskOf(scene)
+  return { top: mix(SKY.top, SKY_DUSK.top, dusk), low: mix(SKY.low, SKY_DUSK.low, dusk) }
+}
+
+// Three clouds drifting right, slowly; puffs of overlapping discs.
+const drawClouds = (fine: Fine, scene: Beach) => {
+  const tint = mix(0xffffff, 0xffb08a, duskOf(scene))
+  const span = fine.width + 60
+  for (let cloud = 0; cloud < 3; cloud++) {
+    const x = ((noise(cloud, 41) * span + scene.seconds * (1.5 + cloud * 0.6)) % span) - 30
+    const y = 4 + cloud * 4 + noise(cloud, 7) * 3
+    const size = 3 + noise(cloud, 13) * 2
+    for (const [dx, dy, r] of [[0, 1, 1], [size * 1.4, 0, 1.3], [size * 2.8, 1, 1.1], [size * 1.4, 2, 1.2], [size * 4, 2, 0.8]] as const) {
+      disc(fine, x + dx, y + dy, size * r, tint, 0.85, 0.6)
+    }
+    rect(fine, x - size * 0.5, y + 2, size * 5, size * 0.6, mix(tint, 0x9aa7c8, 0.25), 0.5)
+  }
+}
+
+const drawSky = (fine: Fine, scene: Beach) => {
+  const sky = skyOf(scene)
+  gradient(fine, 0, SEA_LINE, sky.top, sky.low)
+  const sunX = fine.width * 0.8
 
   if (isNight(scene)) {
-    for (let x = 0; x < columns; x++) {
-      if (noise(x, 7) > 0.93 && noise(x, Math.floor(scene.seconds * 2)) > 0.15) {
-        plot(canvas, x, Math.floor(noise(x, 3) * 4), STAR, true)
+    for (let x = 0; x < fine.width; x += 2) {
+      const at = Math.floor(x / 2)
+      if (noise(at, 7) > 0.94) {
+        const y = 1 + noise(at, 3) * (SEA_LINE - 4)
+        const twinkle = 0.4 + 0.6 * noise(at, Math.floor(scene.seconds * 3))
+        dot(fine, x, y, STAR, twinkle)
+        if (noise(at, 17) > 0.8 && twinkle > 0.8) {
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+            dot(fine, x + dx, y + dy, STAR, 0.4)
+          }
+        }
       }
     }
 
-    const moon = Math.round(columns * 0.8)
-    plot(canvas, moon, 1, MOON)
-    plot(canvas, moon + 1, 1, MOON)
-    plot(canvas, moon, 2, MOON)
+    glow(fine, sunX, 8, 14, MOON, 0.25)
+    disc(fine, sunX, 8, 4.5, MOON)
+    disc(fine, sunX + 2.2, 6.8, 4, mix(sky.top, sky.low, 0.3))
     return
   }
 
-  // The sun sinks toward the sea as dusk comes on.
-  const sunX = Math.round(columns * 0.8)
-  const sunY = 1 + dusk * 4
+  const dusk = duskOf(scene)
+  const sunY = 5 + dusk * (SEA_LINE - 6)
   const sun = mix(SUN, SUN_DUSK, dusk)
-  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0.5], [2, 0.5]] as const) {
-    if (sunY + dy < SEA_TOP) {
-      plot(canvas, sunX + dx, sunY + dy, sun)
-    }
-  }
+  glow(fine, sunX, sunY, 18 + dusk * 10, sun, 0.45 + dusk * 0.2, 0.8)
+  disc(fine, sunX, sunY, 5, sun)
+  disc(fine, sunX - 1.5, sunY - 1.5, 2, mix(sun, 0xffffff, 0.5), 0.6)
+  drawClouds(fine, scene)
 }
 
-const drawSea = (canvas: Canvas, scene: Beach, columns: number) => {
+const drawSea = (fine: Fine, scene: Beach) => {
   const dusk = duskOf(scene)
+  const sky = skyOf(scene)
   const water = isNight(scene) ? SEA_NIGHT : mix(SEA, SEA_DUSK, dusk)
   const swash = swashOf(scene)
-  const bottom = SAND_TOP - 1 + Math.round(swash * 2)
-  const top = SEA_TOP - Math.round(swash * 2)
+  const shore = SAND_LINE + swash * 8
+  const top = SEA_LINE - swash * 6
+  const glint = isNight(scene) ? MOON : mix(SUN, SUN_DUSK, dusk)
+  const glintX = fine.width * 0.8
+  const step = Math.floor(scene.seconds * 8)
 
-  for (let x = 0; x < columns; x++) {
-    for (let y = top; y <= bottom; y++) {
-      const crest = y === top && Math.sin(x * 0.35 - scene.seconds * 2.5) > 0.6
-      plot(canvas, x, y, crest || (swash > 0.3 && y === bottom) ? FOAM : water)
+  for (let y = Math.floor(top); y < shore; y++) {
+    const depth = (y - top) / Math.max(1, shore - top)
+    const base = mix(mix(water, sky.low, 0.35), water, Math.min(1, depth * 1.6))
+    for (let x = 0; x < fine.width; x++) {
+      // Swells: short horizontal streaks of light and shadow, drifting.
+      const wave = Math.sin(x * (0.09 + depth * 0.05) + noise(y, 1) * 40 - scene.seconds * (1.2 + depth))
+      let color = wave > 0.94 ? mix(base, FOAM, 0.35 + depth * 0.2) : wave < -0.9 ? mix(base, 0x000000, 0.12) : base
+      // The sun's (or moon's) path on the water: dashes that shimmer.
+      const spread = 4 + depth * 10
+      const dash = Math.floor((x - glintX + 40) / 3)
+      if (Math.abs(x - glintX) < spread && noise(dash * 31 + y, step) > 0.45 + (Math.abs(x - glintX) / spread) * 0.5) {
+        color = mix(color, glint, 0.75)
+      }
+      dot(fine, x, y, color)
     }
   }
 
-  // The sun's (or moon's) glint on the water.
-  const glintX = Math.round(columns * 0.8)
-  for (let y = SEA_TOP; y < SAND_TOP; y++) {
-    if (noise(y, Math.floor(scene.seconds * 6)) > 0.4) {
-      plot(canvas, glintX + Math.round((noise(y + 9, Math.floor(scene.seconds * 6)) - 0.5) * 3), y, isNight(scene) ? MOON : mix(SUN, SUN_DUSK, dusk))
+  // Foam along the waterline, the wave's edge running up the sand in act 3.
+  for (let x = 0; x < fine.width; x++) {
+    const edge = shore + Math.sin(x * 0.12 + scene.seconds * 1.7) * 1.2
+    for (let dy = -1; dy < 2; dy++) {
+      dot(fine, x, edge + dy, FOAM, dy === 0 ? 0.9 : 0.45)
     }
   }
 }
 
-export const beachCells = (scene: Beach, columns: number, rows: number) => {
-  const canvas = createCanvas(columns, rows)
-  const ground = canvas.pixelRows
-  const overlays: Overlay[] = []
+const drawSand = (fine: Fine, scene: Beach) => {
+  const sand = isNight(scene) ? SAND_NIGHT : mix(SAND, 0xc9905e, duskOf(scene) * 0.5)
+  const shore = SAND_LINE + swashOf(scene) * 8
 
-  drawSky(canvas, scene, columns)
-  drawSea(canvas, scene, columns)
-
-  const sand = isNight(scene) ? SAND_NIGHT : SAND
-  for (let x = 0; x < columns; x++) {
-    for (let y = SAND_TOP + Math.round(swashOf(scene) * 2); y < ground; y++) {
-      plot(canvas, x, y, noise(x, y) > 0.85 ? mix(sand, 0xffffff, 0.15) : sand)
+  for (let y = Math.ceil(shore); y < fine.height; y++) {
+    const isWet = y < shore + 3
+    for (let x = 0; x < fine.width; x++) {
+      const grain = noise(x, y)
+      const base = isWet ? mix(sand, 0x6b5233, 0.35) : sand
+      dot(fine, x, y, grain > 0.9 ? mix(base, 0xffffff, 0.18) : grain < 0.08 ? mix(base, 0x000000, 0.12) : base)
     }
   }
 
-  plotSprite(canvas, UMBRELLA, UMBRELLA_PALETTE, umbrellaX(columns) - 2, ground - UMBRELLA.length)
+  // A few shells and pebbles.
+  for (let x = 0; x < fine.width; x += 7) {
+    if (noise(x, 91) > 0.82) {
+      const y = SAND_LINE + 5 + noise(x, 92) * (fine.height - SAND_LINE - 7)
+      dot(fine, x, y, noise(x, 93) > 0.5 ? 0xf2c4c4 : 0x9a8f80)
+      dot(fine, x + 1, y, noise(x, 93) > 0.5 ? 0xe8a8a8 : 0x8a7f70)
+    }
+  }
+}
+
+// A striped beach umbrella, its shadow, and the towel under it.
+const drawUmbrella = (fine: Fine, columns: number, ground: number) => {
+  const cx = (umbrellaX(columns) + 3.5) * SCALE
+  const crown = 3
+  const radius = 23
+
+  disc(fine, cx + 4, ground - 2, radius * 0.9, 0x000000, 0.18, 0.12)
+
+  const towel = loungeX(columns) * SCALE - 2
+  for (let x = 0; x < 52; x++) {
+    rect(fine, towel + x, ground - 3, 1, 2, Math.floor(x / 5) % 2 === 0 ? 0x2f7fb5 : 0xf6f0e6)
+  }
+
+  line(fine, cx, crown + 4, cx, ground - 1, 0xb0a090)
+  line(fine, cx + 1, crown + 4, cx + 1, ground - 1, 0x8a7a6a)
+
+  for (let y = crown; y <= crown + 8; y++) {
+    const half = radius * Math.sqrt(Math.max(0, 1 - ((crown + 8 - y) / 8.5) ** 2))
+    for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) {
+      const stripe = Math.floor((x - cx + radius) / 5.75) % 2 === 0
+      const shade = (x - cx) / radius > 0.4 ? 0.18 : 0
+      dot(fine, x, y, mix(stripe ? 0xe0453a : 0xf6f0e6, 0x000000, shade))
+    }
+  }
+  // Scalloped hem.
+  for (let x = Math.round(cx - radius); x <= Math.round(cx + radius); x++) {
+    if (Math.sin(((x - cx) / 5.75) * Math.PI) > -0.2) {
+      const stripe = Math.floor((x - cx + radius) / 5.75) % 2 === 0
+      dot(fine, x, crown + 9, stripe ? 0xb8352c : 0xd8d0c4)
+    }
+  }
+  disc(fine, cx + 0.5, crown - 0.5, 1.2, 0xb8352c)
+}
+
+// The sandcastle, built up from the bottom as Clawd pats it into shape.
+const drawCastle = (fine: Fine, scene: Beach, columns: number, ground: number) => {
+  const left = castleX(columns) * SCALE - 2
+  const bottom = ground - 2
+  const height = 17
+  const showFrom = bottom - (scene.castle / CASTLE_PIXELS) * height
+  const lit = CASTLE_COLOR
+  const dim = mix(CASTLE_COLOR, 0x5a3f1e, 0.35)
+  const at = (x: number, y: number, color: number) => y >= showFrom && dot(fine, left + x, y, color)
+
+  const block = (x0: number, width: number, top: number) => {
+    for (let y = top; y < bottom; y++) {
+      for (let x = x0; x < x0 + width; x++) {
+        at(x, y, x >= x0 + width - 2 ? dim : noise(left + x, y) > 0.92 ? mix(lit, 0xffffff, 0.2) : lit)
+      }
+    }
+    for (let x = x0; x < x0 + width; x += 2) {
+      at(x, top - 1, x >= x0 + width - 2 ? dim : lit)
+    }
+  }
+
+  block(0, 24, bottom - 8)
+  block(0, 6, bottom - 13)
+  block(18, 6, bottom - 13)
+  block(9, 7, bottom - 16)
+
+  for (let y = bottom - 5; y < bottom; y++) {
+    for (let x = 10; x < 14; x++) {
+      at(x, y, y === bottom - 5 && (x === 10 || x === 13) ? lit : 0x4a3520)
+    }
+  }
+  for (const x of [2, 20]) {
+    at(x, bottom - 10, 0x4a3520)
+    at(x + 1, bottom - 10, 0x4a3520)
+  }
+
+  if (scene.castle >= CASTLE_PIXELS - 0.01) {
+    const pole = left + 12
+    line(fine, pole, bottom - 22, pole, bottom - 17, 0x8a7a6a)
+    const wave = Math.sin(scene.seconds * 6)
+    for (let dx = 1; dx <= 4; dx++) {
+      dot(fine, pole + dx, bottom - 22 + Math.round(wave * dx * 0.2), 0xe0453a)
+      dot(fine, pole + dx, bottom - 21 + Math.round(wave * dx * 0.2), dx < 3 ? 0xe0453a : 0xb8352c)
+    }
+  }
+}
+
+const drawFire = (fine: Fine, scene: Beach, columns: number, ground: number) => {
+  const x = (fireX(columns) + 1.5) * SCALE
+  const flicker = scene.seconds * 9
+
+  glow(fine, x, ground - 3, 34, 0xff9a3d, 0.45, 0.35)
+  glow(fine, x, ground - 8, 12, 0xffb347, 0.35)
+
+  line(fine, x - 6, ground - 1, x + 6, ground - 4, 0x6b4226)
+  line(fine, x - 6, ground - 4, x + 6, ground - 1, 0x5a3820)
+  line(fine, x - 5, ground - 1, x + 5, ground - 1, 0x3a2614)
+
+  for (let dx = -5; dx <= 5; dx++) {
+    const reach = (1 - Math.abs(dx) / 6) * (7 + 5 * noise(Math.round(x) + dx, Math.floor(flicker)))
+    for (let dy = 0; dy < reach; dy++) {
+      const heat = dy / reach
+      const color = heat < 0.35 ? 0xfff2b0 : heat < 0.65 ? 0xffb347 : 0xff5a2e
+      dot(fine, x + dx + Math.sin(flicker + dy * 0.7) * heat * 1.5, ground - 3 - dy, color, 1 - heat * 0.5)
+    }
+  }
+
+  for (const spark of scene.sparks) {
+    const y = ground - 10 + (spark.y - (SAND_TOP - 1)) * SCALE
+    dot(fine, spark.x * SCALE + Math.sin(spark.age * 20) * 1.5, y, mix(0xffe066, 0xff5a2e, spark.age / 0.8), 1 - spark.age / 0.8)
+  }
+}
+
+const drawGull = (fine: Fine, scene: Beach) => {
+  if (scene.gull === null) {
+    return
+  }
+
+  const x = scene.gull * SCALE
+  const y = 9 + Math.sin(scene.seconds * 2) * 1.5
+  const flap = Math.sin(scene.seconds * 12)
+  const tip = y - 3 * flap
+  for (const side of [-1, 1]) {
+    line(fine, x, y, x + side * 3, y - 1 - flap, GULL)
+    line(fine, x + side * 3, y - 1 - flap, x + side * 6, tip, GULL)
+    dot(fine, x + side * 6, tip, 0x555555)
+  }
+  dot(fine, x, y + 1, GULL)
+  dot(fine, x - 1, y + 1, 0xffb347)
+}
+
+const drawBeach = (fine: Fine, scene: Beach, columns: number) => {
+  const ground = fine.height
+  const overlays: Overlay[] = []
+
+  drawSky(fine, scene)
+  drawSea(fine, scene)
+  drawSand(fine, scene)
+  drawUmbrella(fine, columns, ground)
 
   if (scene.isCastleStanding) {
-    let left = Math.round(scene.castle)
-    CASTLE.slice()
-      .reverse()
-      .forEach((line, row) => {
-        ;[...line].forEach((pixel, dx) => {
-          if (pixel === 'c' && left-- > 0) {
-            plot(canvas, castleX(columns) + dx, ground - 2 - row, CASTLE_COLOR)
-          }
-        })
-      })
+    drawCastle(fine, scene, columns, ground)
   }
 
   if (scene.act >= 4) {
-    const x = fireX(columns)
-    const flicker = Math.floor(scene.seconds * 10)
-    plot(canvas, x, ground - 2, 0x6b4226)
-    plot(canvas, x + 2, ground - 2, 0x6b4226)
-    for (let dx = 0; dx < 3; dx++) {
-      const height = 1 + Math.round(noise(x + dx, flicker) * 2)
-      for (let dy = 0; dy < height; dy++) {
-        plot(canvas, x + dx, ground - 3 - dy, dy === 0 ? 0xffb347 : 0xff6a2e)
-      }
-    }
-    for (const spark of scene.sparks) {
-      plot(canvas, spark.x, spark.y, mix(0xffe066, 0x553311, spark.age / 0.8), true)
-    }
+    drawFire(fine, scene, columns, ground)
   }
 
   // Clawd: lounging in shades, walking out, patting the castle, or fleeing the wave.
@@ -219,31 +390,42 @@ export const beachCells = (scene: Beach, columns: number, rows: number) => {
   const isWalking = (scene.act === 2 && !isBuilding) || (scene.act >= 3 && scene.x > loungeX(columns))
   const pose = isBuilding ? (Math.floor(scene.seconds * 4) % 2 === 0 ? 'punch' : 'idle') : isWalking && Math.floor(scene.seconds * 8) % 2 === 0 ? 'stride' : 'idle'
   const facing = scene.act >= 3 && scene.x > loungeX(columns) ? -1 : 1
-  const lift = scene.act === 3 && swashOf(scene) > 0.5 ? 1 : 0
-  const { top } = drawHero(canvas, pose, facing, scene.x, ground, { lift })
+  const lift = scene.act === 3 && swashOf(scene) > 0.5 ? 2 : 0
+  // Half his block size, so he walks up to the castle's edge rather than
+  // stopping where his full-size self would have.
+  const lounge = loungeX(columns)
+  const build = castleX(columns) - 13
+  const toCastle = clamp((scene.x - lounge) / Math.max(1, build - lounge), 0, 1)
+  const x = (scene.x + 1 + toCastle * (BODY_WIDTH - (BODY_WIDTH * UNIT) / SCALE)) * SCALE
+  disc(fine, x + 6 * UNIT, ground - 2, 7 * UNIT, 0x000000, 0.18, 0.15)
+  const top = drawHeroFine(fine, pose, facing, x, ground - 2, lift, UNIT)
 
   if (scene.act <= 1 || (scene.act >= 4 && scene.x <= loungeX(columns))) {
-    for (const eye of EYE_COLUMNS) {
-      for (const dx of [-1, 0, 1]) {
-        plot(canvas, scene.x + eye + dx, top + EYE_ROW, SHADES)
-      }
-    }
+    const eyes = top + EYE_ROW * UNIT
+    const [first, second] = EYE_COLUMNS
+    rect(fine, x + (first - 1) * UNIT, eyes, (second - first + 3) * UNIT, UNIT * 1.5, SHADES)
+    dot(fine, x + (first - 1) * UNIT + 1, eyes, 0xffffff, 0.8)
+    dot(fine, x + (second - 1) * UNIT + 1, eyes, 0xffffff, 0.8)
   }
 
-  if (scene.gull !== null) {
-    const flap = Math.floor(scene.seconds * 6) % 2 === 0
-    plot(canvas, scene.gull, 2, GULL)
-    plot(canvas, scene.gull - 1, flap ? 1 : 2, GULL)
-    plot(canvas, scene.gull + 1, flap ? 1 : 2, GULL)
-
-    if (scene.gull < columns - 4 && scene.gull > columns * 0.4) {
-      overlays.push({ column: Math.round(scene.gull) + 2, row: 0, text: 'Caw!', color: 0xdddddd })
-    }
+  drawGull(fine, scene)
+  if (scene.gull !== null && scene.gull < columns - 4 && scene.gull > columns * 0.4) {
+    overlays.push({ column: Math.round(scene.gull) + 2, row: 0, text: 'Caw!', color: 0xdddddd })
   }
 
   if (scene.act === 3 && scene.actSeconds > 0.4 && scene.actSeconds < 1.4) {
     overlays.push({ column: castleX(columns) - 2, row: 0, text: 'SPLASH!', color: FOAM })
   }
 
-  return packCanvas(canvas, overlays)
+  return overlays
+}
+
+export const beachCells = (scene: Beach, columns: number, rows: number) => {
+  const fine = createFine(columns, rows)
+  return fineCells(fine, drawBeach(fine, scene, columns))
+}
+
+export const beachPicture = (scene: Beach, columns: number, rows: number) => {
+  const fine = createFine(columns, rows)
+  return finePicture(fine, drawBeach(fine, scene, columns))
 }

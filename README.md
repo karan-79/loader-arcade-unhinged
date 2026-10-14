@@ -11,10 +11,13 @@ the Token Goblin and friends.
 | `fight-shooter` | Waves of rivals run in; some hop bullets, some wear helmets, sometimes a swarm. Powerups: spread shot, rapid fire, laser, homing missiles, a tank, a chopper. Bosses walk in, talk too much, and sometimes meet a bazooka. |
 | `fight-dojo` | Clawd holds the middle against rivals from both sides: chops, kicks, uppercuts, judo throws, spin kicks. Rage and giant powerups; boss fights. |
 | `fight-knight` | One-on-one duels with a different weapon each time. A finishing cut, a beat of stillness, and the rival falls in two. Bosses end in an ultimate. |
-| `chill-beach` | A day at the beach: shades under an umbrella, a gull, a sandcastle, a big wave, sunset, a bonfire under the stars. |
-| `chill-drive` | A little car takes the scenic route: pulling away, hills and trees, sunset, then night with headlights and street lamps. |
-| `chill-meditation` | Clawd sits and breathes. Ripples, fireflies, a soft aura, floating stones, and in the end a golden glow. |
+| `chill-beach` | A day at the beach: shades under a striped umbrella, clouds and a gull, a sandcastle with a flag, a big wave, sunset over the sea, a bonfire under the moon. |
+| `chill-drive` | Clawd takes the scenic route: snowy mountains, rolling hills, pines, sunset, then night with headlight beams and street lamps. |
+| `chill-meditation` | Clawd sits in a zen garden as the moon rises. Lanterns, ripples in the raked sand, fireflies, floating stones, and in the end a golden flame. |
 | `fight`, `chill` | A different scene from the theme each turn. `fight` is the default. |
+
+In kitty and Ghostty the chill scenes are drawn as live pictures, four times
+finer than the block characters; other terminals get the same scenes in blocks.
 
 Every turn plays as a little story: Clawd gets ready, something happens, the
 fight is on, then a set piece, then everything. The pacing fits itself to how
@@ -22,10 +25,10 @@ long your turns run. Everyone talks; the companies say what you'd expect.
 
 ## Install
 
-At the prompt of a Claude Code terminal session:
+Needs Claude Code 2.1.275 or later. At the prompt of a Claude Code terminal session:
 
 ```
-/plugin install loader-arcade-unhinged --marketplace <owner>/loader-arcade-unhinged
+/plugin install loader-arcade-unhinged --marketplace karan-79/loader-arcade-unhinged
 ```
 
 ## Use
