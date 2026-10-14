@@ -2,7 +2,7 @@
 
 A mod for Claude Code that turns the wait while Claude works into a tiny pixel
 arcade above the prompt. **Clawd** takes on the AI industry, logos
-and all: ClosedAI, GPT-4.5o-MINI-HIGH, Kodex, Gemenai, Meh-ta, Mistrale,
+and all: ClosedAI, Hugging Fake, Kodex, Gemenai, Meh-ta, Mistrale,
 Grokk, DeepSeep, Cursr, Co-Pilout, Perplexed and Qwhen, plus the Hallucinator,
 the Token Goblin and friends.
 

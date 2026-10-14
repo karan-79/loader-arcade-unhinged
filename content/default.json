@@ -14,16 +14,16 @@
       ]
     },
     {
-      "id": "gpt-mini-high",
-      "label": "GPT-4.5o-MINI-HIGH",
+      "id": "hugging-fake",
+      "label": "HUGGING FAKE",
       "weight": 2,
-      "sprite": ["...ggg...", ".gg...gg.", "g..g.g..g", "g...g...g", "g..g.g..g", ".gg...gg.", "...ggg..."],
-      "palette": { "g": "#19c37d" },
+      "sprite": ["..yyyyy..", ".yyyyyyy.", "yykyyykyy", "yyyyyyyyy", "yymmmmmyy", "hhymmmyhh", ".hhyyyhh."],
+      "palette": { "y": "#ffd21e", "k": "#141414", "m": "#7a3a1a", "h": "#ff9d0b" },
       "taunts": [
-        "Which model am I? Nobody knows.",
-        "Great question! Let me delve.",
-        "You're absolutely right!",
-        "I'm the new default. Today."
+        "Download 400 GB to say hi.",
+        "Trending: a fine-tune of a fine-tune.",
+        "My model card says: TBD.",
+        "Hugs! Also, I'm using your GPU."
       ]
     },
     {
