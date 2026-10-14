@@ -1,0 +1,5 @@
+{
+  "name": "loader-arcade-unhinged",
+  "owner": { "name": "Karandeep" },
+  "plugins": [{ "name": "loader-arcade", "source": "./", "description": "Unhinged edition: a pixel arcade above the prompt, starring parodies of AI companies." }]
+}
