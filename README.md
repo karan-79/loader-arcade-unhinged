@@ -1,5 +1,7 @@
 # loader-arcade-unhinged
 
+![Clawd hears out QWHEN's pitch, says "meh." and reaches for the bazooka; then a quiet night by a mountain campfire](assets/demo.gif)
+
 A mod for Claude Code that turns the wait while Claude works into a tiny pixel
 arcade above the prompt. **Clawd** takes on the AI industry, logos
 and all: ClosedAI, Hugging Fake, Kodex, Gemenai, Meh-ta, Mistrale,
@@ -61,6 +63,13 @@ A plugin of its own, started as a copy of loader-arcade. After changing
 python3 tools/build-content.py
 npx tsx tools/dump-sprites.ts > /tmp/sprites.json
 python3 tools/build-assets.py /tmp/sprites.json
+```
+
+The GIF at the top is drawn from the plugin's own frames:
+
+```
+npx tsx tools/demo-frames.ts /tmp/frames.json
+python3 tools/demo-gif.py /tmp/frames.json assets/demo.gif <mono font> <bold mono font>
 ```
 
 Checks: `claude plugin validate .` and `claude plugin test .`
